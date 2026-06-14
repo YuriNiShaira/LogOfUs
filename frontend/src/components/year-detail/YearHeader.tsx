@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Trash2, Sparkles, Calendar } from 'lucide-react';
+import { ArrowLeft, Trash2, Sparkles, Calendar, Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -9,9 +9,10 @@ interface YearHeaderProps {
   year: number;
   description?: string;
   onDeleteYear: () => void;
+  onEditYear: () => void; 
 }
 
-const YearHeader: React.FC<YearHeaderProps> = ({ year, description, onDeleteYear }) => {
+const YearHeader: React.FC<YearHeaderProps> = ({ year, description, onDeleteYear, onEditYear }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -48,12 +49,20 @@ const YearHeader: React.FC<YearHeaderProps> = ({ year, description, onDeleteYear
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button 
-          onClick={onDeleteYear} 
-          className="flex items-center gap-2 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-        >
-          <Trash2 className="w-4 h-4" /> Remove Chapter
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={onEditYear} 
+            className="flex items-center gap-2 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+          >
+            <Edit2 className="w-4 h-4" /> Edit Chapter
+          </button>
+          <button 
+            onClick={onDeleteYear} 
+            className="flex items-center gap-2 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" /> Remove Chapter
+          </button>
+        </div>
       </div>
 
       {/* Main Header Box */}

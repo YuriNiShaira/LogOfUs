@@ -15,6 +15,7 @@ import PlaylistSection from '../components/PlaylistSection';
 import MemoryDetailModal from '../components/MemoryDetailModal';
 import RomanticBackground from '../components/RomanticBackground';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import EditYearModal from '../components/EditYearModal';
 import {
   TimelineSkeleton,
   EmptyMemories,
@@ -58,6 +59,7 @@ const YearDetailPage: React.FC = () => {
   const [showReturnToBook, setShowReturnToBook] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const [showDeleteYearModal, setShowDeleteYearModal] = useState(false);
+  const [isEditYearModalOpen, setIsEditYearModalOpen] = useState(false);
 
   const { data: year, isLoading: yearLoading } = useQuery<Year>({
     queryKey: ['year', yearId],
@@ -103,6 +105,13 @@ const YearDetailPage: React.FC = () => {
       toast.error(error.response?.data?.error || 'Failed to delete year');
     },
   });
+
+  // Fixed: Removed unused parameter
+  const handleEditYear = () => {
+    // Refresh the year data after editing
+    queryClient.invalidateQueries({ queryKey: ['year', yearId] });
+    queryClient.invalidateQueries({ queryKey: ['years'] });
+  };
 
   const memories = useMemo(() => {
     const rawMemories = Array.isArray(memoriesData) ? memoriesData : [];
@@ -201,6 +210,7 @@ const YearDetailPage: React.FC = () => {
           year={year.year_number} 
           description={year.description}
           onDeleteYear={() => setShowDeleteYearModal(true)}
+          onEditYear={() => setIsEditYearModalOpen(true)}
         />
 
         {stats && activeTab === 'memories' && memories.length > 0 && (
@@ -366,6 +376,18 @@ const YearDetailPage: React.FC = () => {
       
       <DeleteConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => { if (deleteTarget) { deleteMutation.mutate(deleteTarget.id); setDeleteTarget(null); } }} title="Delete Memory" itemName={deleteTarget?.name} message="This action cannot be undone. All data will be permanently removed." loading={deleteMutation.isPending} />
       <DeleteConfirmModal isOpen={showDeleteYearModal} onClose={() => setShowDeleteYearModal(false)} onConfirm={() => { deleteYearMutation.mutate(); setShowDeleteYearModal(false); }} title="Delete Year" itemName={year?.year_number?.toString()} message="This will permanently delete this year and ALL memories inside it. This cannot be undone!" loading={deleteYearMutation.isPending} />
+      
+      <EditYearModal
+        isOpen={isEditYearModalOpen}
+        onClose={() => {
+          setIsEditYearModalOpen(false);
+          handleEditYear();
+        }}
+        yearId={parseInt(yearId!)}
+        yearNumber={year.year_number}
+        currentDescription={year.description || ''}
+        currentCoverImage={year.cover_image || null}
+      />
     </div>
   );
 };
