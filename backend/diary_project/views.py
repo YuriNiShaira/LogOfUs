@@ -115,6 +115,40 @@ class YearViewSet(CoupleFilteredViewSet):
             year.cover_image = image_url
             year.save(update_fields=['cover_image'])
 
+
+    def update(self, request, *args, **kwargs):
+        """Update year (including cover image)"""
+        year = self.get_object()
+        couple = get_couple(request)
+        
+        # Check if year_number is being changed and validate
+        new_year_number = request.data.get('year_number')
+        if new_year_number is not None:
+            new_year_number = int(new_year_number)
+            if new_year_number < 0:
+                return Response(
+                    {'error': 'Year number cannot be negative.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check for duplicate year numbers (excluding current year)
+            if Year.objects.filter(couple=couple, year_number=new_year_number).exclude(id=year.id).exists():
+                label = "Prequel" if new_year_number == 0 else f"Year {new_year_number}"
+                return Response(
+                    {'error': f'{label} already exists for your relationship.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Handle cover image upload
+        image_file = request.FILES.get('cover_image')
+        if image_file:
+            image_url = upload_to_supabase(image_file, folder='year_covers')
+            request.data._mutable = True
+            request.data['cover_image'] = image_url
+            request.data._mutable = False
+        
+        return super().update(request, *args, **kwargs)
+
     @action(detail=True, methods=['get'])
     def memories(self, request, pk=None):
         year = self.get_object()
