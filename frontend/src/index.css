@@ -281,22 +281,78 @@
   min-height: 100vh;
 }
 
-/* Glass cards */
+/* Glass cards (Behind components) */
 .dark .glass-card,
 .dark .glass-card-dark {
   background: rgba(30, 20, 40, 0.7) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* ✅ Remove forced heading colors - let Tailwind dark:text-* classes work */
-/* Instead, only set defaults for unstyled text */
-.dark .text-gray-800 { color: #e5e5e5 !important; }
-.dark .text-gray-700 { color: #d4d4d4 !important; }
-.dark .text-gray-600 { color: #b0a0c0 !important; }
-.dark .text-gray-500 { color: #9182a8 !important; }
-.dark .text-gray-400 { color: #706080 !important; }
+/* Base dashboard dark text (For things NOT on white paper cards) */
+.dark .text-gray-800:not(.notebook-page *, .notebook-card *, .polaroid-bg *, .stats-card-sticky *) { color: #e5e5e5 !important; }
+.dark .text-gray-700:not(.notebook-page *, .notebook-card *, .polaroid-bg *, .stats-card-sticky *) { color: #d4d4d4 !important; }
+.dark .text-gray-600:not(.notebook-page *, .notebook-card *, .polaroid-bg *, .stats-card-sticky *) { color: #b0a0c0 !important; }
+.dark .text-gray-500:not(.notebook-page *, .notebook-card *, .polaroid-bg *, .stats-card-sticky *) { color: #9182a8 !important; }
+.dark .text-gray-400:not(.notebook-page *, .notebook-card *, .polaroid-bg *, .stats-card-sticky *) { color: #706080 !important; }
 
-/* Form elements */
+/* =======================================================
+   NOTEBOOK & PAPER CARDS - Maintain High Contrast Dark Text
+   ======================================================= */
+.dark .notebook-page,
+.dark .notebook-card {
+  /* Keeps the gorgeous paper texture colors visible */
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.85), transparent 35%), linear-gradient(180deg, #fff9f7 0%, #ffe9f4 100%) !important;
+}
+
+/* Force handwriting/descriptions/dates to stay charcoal black/dark grey on paper */
+.dark .notebook-page h1, .dark .notebook-page h2, .dark .notebook-page h3,
+.dark .notebook-card h1, .dark .notebook-card h2, .dark .notebook-card h3,
+.dark .notebook-page p, .dark .notebook-card p,
+.dark .notebook-page span, .dark .notebook-card span,
+.dark .font-handwriting {
+  color: #1f2937 !important; /* Tailwind gray-800 */
+}
+
+/* Keep the notebook lines and labels readable */
+.dark .notebook-lines {
+  background-image: linear-gradient(rgba(255, 107, 139, 0.14) 1px, transparent 1px) !important;
+}
+.dark .notebook-label {
+  mix-blend-mode: multiply !important;
+  color: #4b5563 !important;
+}
+
+/* =======================================================
+   POLAROID - Force white background & dark text
+   ======================================================= */
+.dark .polaroid-bg {
+  background-color: #ffffff !important;
+}
+
+.dark .polaroid-text,
+.dark .polaroid-bg span,
+.dark .polaroid-bg p {
+  color: #374151 !important; /* Tailwind gray-700 */
+}
+
+.dark .polaroid-subtext {
+  color: #6b7280 !important; /* Tailwind gray-500 */
+}
+
+/* =======================================================
+   STICKY NOTE - Force yellow & dark text
+   ======================================================= */
+.dark .stats-card-sticky {
+  background-color: #fff9b0 !important;
+}
+.dark .stats-card-sticky *,
+.dark [class*="June 2022"] { /* targeted yellow dates */
+  color: #1f2937 !important;
+}
+
+/* =======================================================
+   FORM INPUTS & BUTTONS (Login / Modals)
+   ======================================================= */
 .dark input, .dark textarea, .dark select {
   background-color: rgba(30, 20, 40, 0.6) !important;
   color: #e0d0f0 !important;
@@ -308,7 +364,6 @@
   color: #706080 !important;
 }
 
-/* Buttons */
 .dark .btn-soft {
   background: rgba(40, 30, 60, 0.6) !important;
   color: #c0b0d0 !important;
@@ -316,15 +371,15 @@
 }
 
 .dark .btn-romantic {
-  background: linear-gradient(to right, #c0392b, #e74c3c) !important;
+  background: linear-gradient(to right, #FF6B8B, #FF4B6E) !important;
 }
 
 /* Text gradients */
 .dark .text-gradient-love {
-  background: linear-gradient(135deg, #ff8fa3 0%, #ffb7c5 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  background: linear-gradient(135deg, #ff6b8b 0%, #ff4b6e 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
 }
 
 .dark .text-gradient-soft {
@@ -392,7 +447,6 @@
 /* =======================================================
    FORCE LIGHT MODE FOR EDIT MEMORY MODAL
    ======================================================= */
-/* Overrides the global .dark !important rules above */
 .dark .force-light-theme input, 
 .dark .force-light-theme textarea, 
 .dark .force-light-theme select {

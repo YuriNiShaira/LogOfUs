@@ -60,7 +60,7 @@ const TimelineMemory: React.FC<TimelineMemoryProps> = ({
       </motion.div>
       
       {/* Month indicator sticker */}
-      <div className={`absolute ${isEven ? 'right-[54%]' : 'left-[54%]'} top-1 whitespace-nowrap z-20`}>
+      <div className={`absolute ${isEven ? 'right-[54%]' : 'left-[54%]'} top-1 whitespace-nowrap z-20 force-light-theme`}>
         <div className="inline-block px-3 py-1 bg-yellow-100 shadow-sm border border-yellow-200 font-handwriting text-gray-700 text-xl transform -rotate-2">
           {fullDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </div>
@@ -71,9 +71,10 @@ const TimelineMemory: React.FC<TimelineMemoryProps> = ({
         <div className={`${isEven ? 'md:order-1' : 'md:order-2'} pl-0 md:pl-0 z-10`}>
           <div className={`w-full max-w-lg ${isEven ? 'md:ml-auto md:pr-10' : 'md:mr-auto md:pl-10'}`}>
             
+            {/* Added force-light-theme here */}
             <motion.div 
               whileHover={{ scale: 1.02 }}
-              className={`bg-[#faf8f5] p-6 sm:p-8 rounded-sm shadow-md border-l-4 border-red-300 relative transform ${paperRotation}`}
+              className={`bg-[#faf8f5] p-6 sm:p-8 rounded-sm shadow-md border-l-4 border-red-300 relative transform ${paperRotation} force-light-theme`}
               style={{
                 backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #e5e7eb 31px, #e5e7eb 32px)',
                 backgroundAttachment: 'local'
@@ -156,9 +157,10 @@ const TimelineMemory: React.FC<TimelineMemoryProps> = ({
         
         {/* Image Side - Polaroid */}
         <div className={`${isEven ? 'md:order-2' : 'md:order-1'} z-10`}>
+          {/* Added force-light-theme here */}
           <motion.div
             whileHover={{ scale: 1.03, rotate: 0, zIndex: 30 }}
-            className={`relative bg-white p-4 pb-16 shadow-[0_15px_35px_rgba(0,0,0,0.1)] border border-gray-100 max-w-sm mx-auto cursor-pointer transform ${polaroidRotation} transition-all duration-300`}
+            className={`relative bg-white p-4 pb-16 shadow-[0_15px_35px_rgba(0,0,0,0.1)] border border-gray-100 max-w-sm mx-auto cursor-pointer transform ${polaroidRotation} transition-all duration-300 force-light-theme`}
             onClick={onView}
           >
             <WashiTape rotate={isEven ? 'rotate-2' : '-rotate-3'} color="bg-pink-100/70" />
