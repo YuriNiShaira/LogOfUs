@@ -143,10 +143,6 @@ npm run dev
 - API configuration is located in `frontend/src/services/api.ts`.
 - Media uploads are handled via Supabase Storage.
 
----
-
-## License
-This project currently does not include a license. Add one if you plan to open-source or distribute it.
 
 ---
 
