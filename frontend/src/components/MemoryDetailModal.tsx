@@ -184,16 +184,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
     }
   };
 
-  const handlePrevMemory = () => {
-    if (onPrev && (hasPrevMemory || hasPrevDate)) {
-      onPrev();
-      setCurrentSpread(0);
-      setDirection(-1);
-      setIsFlipping(true);
-      setTimeout(() => setIsFlipping(false), 600);
-    }
-  };
-
   if (!memory) return null;
   
   const formattedDate = date ? new Date(date + 'T00:00:00') : null;
