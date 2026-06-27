@@ -21,6 +21,7 @@ interface MemoryDetailModalProps {
   onClose: () => void;
   memory: Memory | null;
   onEdit?: (memory: Memory) => void;
+  onReturnToBook?: () => void;
   memories?: Memory[];
   currentIndex?: number;
   onNext?: () => void;

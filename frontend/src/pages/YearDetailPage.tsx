@@ -26,7 +26,6 @@ import {
   YearStats,
   MemoriesControls,
 } from '../components/year-detail';
-import type { Memory } from '../components/year-detail';
 import toast from 'react-hot-toast';
 
 interface Year {
@@ -34,6 +33,21 @@ interface Year {
   year_number: number;  
   cover_image?: string;
   description?: string;
+}
+
+// Define the Memory type that matches MemoryDetailModal's expectations
+interface Memory {
+  id: number;
+  title: string;
+  date: string;
+  description: string;
+  image: string | null;
+  memory_type: string;
+  is_favorite: boolean;
+  location: string;
+  favorite_quote?: string;
+  year_id: number;
+  year: number;
 }
 
 type TabType = 'memories' | 'funfacts' | 'anime' | 'playlist' | 'games';
@@ -74,7 +88,12 @@ const YearDetailPage: React.FC = () => {
     queryKey: ['memories', yearId],
     queryFn: async () => {
       const response = await api.get(`/memories/?year=${yearId}`);
-      return Array.isArray(response.data) ? response.data : response.data.results || [];
+      const data = Array.isArray(response.data) ? response.data : response.data.results || [];
+      return data.map((memory: any) => ({
+        ...memory,
+        year_id: memory.year_id || parseInt(yearId!),
+        year: memory.year || year?.year_number || 0,
+      }));
     },
     enabled: !!yearId && activeTab === 'memories',
   });
@@ -106,9 +125,7 @@ const YearDetailPage: React.FC = () => {
     },
   });
 
-  // Fixed: Removed unused parameter
   const handleEditYear = () => {
-    // Refresh the year data after editing
     queryClient.invalidateQueries({ queryKey: ['year', yearId] });
     queryClient.invalidateQueries({ queryKey: ['years'] });
   };
@@ -164,7 +181,6 @@ const YearDetailPage: React.FC = () => {
         setSelectedMemoryForView(memory);
         setIsViewModalOpen(true);
         setPendingMemoryId(null);
-        // Clear the navigation state so this doesn't re-trigger when the modal closes
         try {
           navigate(location.pathname, { replace: true, state: {} });
         } catch (e) {
@@ -172,7 +188,21 @@ const YearDetailPage: React.FC = () => {
         }
       }
     }
-  }, [pendingMemoryId, memories, isViewModalOpen]);
+  }, [pendingMemoryId, memories, isViewModalOpen, navigate, location.pathname]);
+
+  // Handle return to book from the modal
+  const handleReturnToBook = () => {
+    if (selectedMemoryForView) {
+      navigate('/calendar', { 
+        state: { 
+          openBookModal: true, 
+          bookDate: selectedMemoryForView.date 
+        } 
+      });
+    } else {
+      navigate('/calendar');
+    }
+  };
 
   if (yearLoading) {
     return (
@@ -365,13 +395,7 @@ const YearDetailPage: React.FC = () => {
         onClose={() => { setIsViewModalOpen(false); setSelectedMemoryForView(null); setShowReturnToBook(false); }}
         memory={selectedMemoryForView}
         onEdit={(memory) => { setIsViewModalOpen(false); setSelectedMemoryForView(null); setSelectedMemory(memory); setIsEditModalOpen(true); setShowReturnToBook(false); }}
-        onReturnToBook={showReturnToBook ? () => {
-          if (selectedMemoryForView) {
-            navigate('/calendar', { state: { openBookModal: true, bookDate: selectedMemoryForView.date } });
-          } else {
-            navigate('/calendar');
-          }
-        } : undefined}
+        onReturnToBook={showReturnToBook ? handleReturnToBook : undefined}
       />
       
       <DeleteConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => { if (deleteTarget) { deleteMutation.mutate(deleteTarget.id); setDeleteTarget(null); } }} title="Delete Memory" itemName={deleteTarget?.name} message="This action cannot be undone. All data will be permanently removed." loading={deleteMutation.isPending} />
