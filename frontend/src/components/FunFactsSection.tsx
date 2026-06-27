@@ -88,19 +88,19 @@ const FunFactsSection: React.FC<FunFactsSectionProps> = ({ yearId, yearNumber })
 
   // Updated with paper colors and slight rotations for that messy corkboard look
   const factCards = [
-    { icon: Utensils, label: 'Favorite Food', key: 'favorite_food' as keyof FunFacts, bg: 'bg-yellow-100', rotate: '-rotate-2', placeholder: 'Pizza, Sushi, etc.' },
-    { icon: Tv, label: 'Favorite Anime', key: 'favorite_anime' as keyof FunFacts, bg: 'bg-pink-100', rotate: 'rotate-1', placeholder: 'Naruto, One Piece, etc.' },
-    { icon: Music, label: 'Our Song', key: 'song_of_the_year' as keyof FunFacts, bg: 'bg-blue-100', rotate: '-rotate-1', placeholder: 'Our special song' },
-    { icon: Camera, label: 'Best Movie', key: 'favorite_movie' as keyof FunFacts, bg: 'bg-green-100', rotate: 'rotate-2', placeholder: 'Best movie we watched' },
-    { icon: Heart, label: 'Fav Activity', key: 'favorite_activity' as keyof FunFacts, bg: 'bg-purple-100', rotate: '-rotate-3', placeholder: 'What we loved doing together' },
-    { icon: MapPin, label: 'Adventures', key: 'places_visited' as keyof FunFacts, bg: 'bg-orange-100', rotate: 'rotate-1', placeholder: 'Beach, Mountains, etc.' },
+    { icon: Utensils, label: 'Fun Fact #1', key: 'favorite_food' as keyof FunFacts, bg: 'bg-yellow-100', rotate: '-rotate-2', placeholder: 'Share some fun facts' },
+    { icon: Tv, label: 'Fun Fact #2', key: 'favorite_anime' as keyof FunFacts, bg: 'bg-pink-100', rotate: 'rotate-1', placeholder: 'Share some fun facts.' },
+    { icon: Music, label: 'Fun Fact #3', key: 'song_of_the_year' as keyof FunFacts, bg: 'bg-blue-100', rotate: '-rotate-1', placeholder: 'Share some fun facts' },
+    { icon: Camera, label: 'Fun Fact #4', key: 'favorite_movie' as keyof FunFacts, bg: 'bg-green-100', rotate: 'rotate-2', placeholder: 'Share some fun facts' },
+    { icon: Heart, label: 'Fun Fact #5', key: 'favorite_activity' as keyof FunFacts, bg: 'bg-purple-100', rotate: '-rotate-3', placeholder: 'Share some fun facts' },
+    { icon: MapPin, label: 'Fun Fact #6', key: 'places_visited' as keyof FunFacts, bg: 'bg-orange-100', rotate: 'rotate-1', placeholder: 'Share some fun facts' },
   ];
 
   const storyCards = [
     { icon: Sparkles, label: 'Best Moment', key: 'best_moment' as keyof FunFacts, placeholder: 'The most memorable moment...', rows: 3 },
     { icon: Smile, label: 'Inside Jokes', key: 'inside_jokes' as keyof FunFacts, placeholder: 'Our special jokes...', rows: 3 },
     { icon: Home, label: 'Highlights', key: 'highlights' as keyof FunFacts, placeholder: 'The best parts of this year...', rows: 3 },
-    { icon: Heart, label: 'Memorable Quote', key: 'memorable_quote' as keyof FunFacts, placeholder: 'Something special we said...', rows: 2 },
+    { icon: Heart, label: 'Favorite word', key: 'memorable_quote' as keyof FunFacts, placeholder: 'Something special we said...', rows: 2 },
   ];
 
   if (isLoading) {
