@@ -42,7 +42,7 @@ def register(request):
     tokens = get_tokens_for_user(user)
     
     return Response({
-        'message': f'Welcome, {user.profile.display_name}! 🎉',
+        'message': f'Welcome, {user.profile.display_name}!',
         'username': user.username,
         'display_name': user.profile.display_name,
         'couple_name': couple.name,
@@ -80,7 +80,7 @@ def login_view(request):
     invite_code = couple.invite_code if not has_partner else None
     
     return Response({
-        'message': f'Welcome back, {user.profile.display_name}! 💕',
+        'message': f'Welcome back, {user.profile.display_name}!',
         'username': user.username,
         'display_name': user.profile.display_name,
         'couple_name': couple.name,
