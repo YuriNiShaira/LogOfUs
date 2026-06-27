@@ -40,7 +40,6 @@ const Navbar: React.FC = () => {
     try {
       await api.post('/auth/logout/', { refresh: refreshToken });
     } catch (error) {
-      // Still logout locally
     }
     logout();
     toast.success('See you soon! 💕');
