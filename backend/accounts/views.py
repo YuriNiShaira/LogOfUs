@@ -214,3 +214,98 @@ def contact(request):
         pass
     
     return Response({'success': True,'message': f'Thanks {name}! Your message has been saved. We\'ll get back to you soon! 💕'})
+
+
+
+@api_view(['GET', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    """Get or update user profile"""
+    profile = request.user.profile
+    
+    if request.method == 'GET':
+        return Response({
+            'id': profile.id,
+            'username': request.user.username,
+            'display_name': profile.display_name,
+            'couple': {
+                'id': profile.couple.id,
+                'name': profile.couple.name,
+                'anniversary_date': profile.couple.anniversary_date,
+                'invite_code': profile.couple.invite_code,
+                'member_count': profile.couple.members.count(),
+                'partner1_name': profile.couple.members.first().display_name if profile.couple.members.first() else None,
+                'partner2_name': profile.couple.members.last().display_name if profile.couple.members.count() > 1 else None,
+            } if profile.couple else None
+        })
+    
+    display_name = request.data.get('display_name')
+    if display_name:
+        profile.display_name = display_name
+        profile.save()
+    
+    return Response({
+        'id': profile.id,
+        'username': request.user.username,
+        'display_name': profile.display_name,
+        'couple': {
+            'id': profile.couple.id,
+            'name': profile.couple.name,
+            'anniversary_date': profile.couple.anniversary_date,
+        } if profile.couple else None
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """Change user's password - only for the authenticated user"""
+    user = request.user
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+    
+    if not current_password:
+        return Response({'error': 'Current password is required'}, status=400)
+    
+    if not new_password:
+        return Response({'error': 'New password is required'}, status=400)
+    
+    if not user.check_password(current_password):
+        return Response({'error': 'Current password is incorrect'}, status=400)
+    
+    if len(new_password) < 8:
+        return Response({'error': 'Password must be at least 8 characters'}, status=400)
+    
+    user.set_password(new_password)
+    user.save()
+    
+    return Response({'message': 'Password changed successfully!'})
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_couple(request):
+    """Update couple name and anniversary date"""
+    couple = request.user.profile.couple
+    if not couple:
+        return Response({'error': 'Not part of a couple'}, status=404)
+    
+    name = request.data.get('name')
+    anniversary_date = request.data.get('anniversary_date')
+    
+    if name:
+        couple.name = name
+    
+    if anniversary_date:
+        couple.anniversary_date = anniversary_date
+    
+    couple.save()
+    
+    return Response({
+        'id': couple.id,
+        'name': couple.name,
+        'anniversary_date': couple.anniversary_date,
+        'invite_code': couple.invite_code,
+        'member_count': couple.members.count(),
+        'partner1_name': couple.members.first().display_name if couple.members.first() else None,
+        'partner2_name': couple.members.last().display_name if couple.members.count() > 1 else None,
+    })
