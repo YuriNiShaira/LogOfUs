@@ -1,19 +1,30 @@
 import axios from 'axios';
 
+// Simple in-memory cache
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Track ongoing requests to prevent duplicates
+const pendingRequests = new Map<string, Promise<any>>();
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
 
 api.interceptors.request.use((config) => {
-  // Don't set Content-Type for FormData (browser will set it with boundary)
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
   }
 
-  // Don't add auth token for login or register endpoints
   const isAuthEndpoint = config.url?.includes('/auth/login') || 
                         config.url?.includes('/auth/register') ||
                         config.url?.includes('/auth/refresh');
@@ -78,9 +89,81 @@ api.interceptors.response.use(
       }
     }
     
-    // Return the error for login/register attempts (don't try to refresh)
     return Promise.reject(error);
   }
 );
 
-export { api };
+
+const cachedGet = async <T = any>(
+  url: string, 
+  forceRefresh: boolean = false,
+  ttl: number = CACHE_TTL
+): Promise<T> => {
+  const cacheKey = url;
+  
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < ttl) {
+      return cached.data as T;
+    }
+  }
+  
+  // Check for pending request to prevent duplicates
+  if (pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey) as Promise<T>;
+  }
+  
+  // Make the request
+  const requestPromise = api.get<T>(url)
+    .then(response => {
+      // Cache the response
+      cache.set(cacheKey, {
+        data: response.data,
+        timestamp: Date.now(),
+      });
+      pendingRequests.delete(cacheKey);
+      return response.data;
+    })
+    .catch(error => {
+      pendingRequests.delete(cacheKey);
+      throw error;
+    });
+  
+  pendingRequests.set(cacheKey, requestPromise);
+  return requestPromise;
+};
+
+const batchGet = async <T = any>(urls: string[]): Promise<T[]> => {
+  return Promise.all(urls.map(url => cachedGet<T>(url)));
+};
+
+const clearCache = (): void => {
+  cache.clear();
+  pendingRequests.clear();
+};
+
+
+const clearCacheFor = (url: string): void => {
+  cache.delete(url);
+  pendingRequests.delete(url);
+};
+
+
+const prefetch = async (url: string): Promise<void> => {
+  try {
+    await cachedGet(url);
+  } catch (error) {
+    // Silently fail for prefetch
+    console.debug('Prefetch failed for:', url, error);
+  }
+};
+
+export { 
+  api,
+  cachedGet,
+  batchGet,
+  clearCache,
+  clearCacheFor,
+  prefetch,
+};

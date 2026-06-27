@@ -300,7 +300,6 @@
    ======================================================= */
 .dark .notebook-page,
 .dark .notebook-card {
-  /* Keeps the gorgeous paper texture colors visible */
   background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.85), transparent 35%), linear-gradient(180deg, #fff9f7 0%, #ffe9f4 100%) !important;
 }
 
@@ -310,7 +309,7 @@
 .dark .notebook-page p, .dark .notebook-card p,
 .dark .notebook-page span, .dark .notebook-card span,
 .dark .font-handwriting {
-  color: #1f2937 !important; /* Tailwind gray-800 */
+  color: #1f2937 !important;
 }
 
 /* Keep the notebook lines and labels readable */
@@ -332,11 +331,11 @@
 .dark .polaroid-text,
 .dark .polaroid-bg span,
 .dark .polaroid-bg p {
-  color: #374151 !important; /* Tailwind gray-700 */
+  color: #374151 !important;
 }
 
 .dark .polaroid-subtext {
-  color: #6b7280 !important; /* Tailwind gray-500 */
+  color: #6b7280 !important;
 }
 
 /* =======================================================
@@ -346,7 +345,7 @@
   background-color: #fff9b0 !important;
 }
 .dark .stats-card-sticky *,
-.dark [class*="June 2022"] { /* targeted yellow dates */
+.dark [class*="June 2022"] {
   color: #1f2937 !important;
 }
 
@@ -477,3 +476,34 @@
 .dark .force-light-theme .text-gray-600 { color: #4b5563 !important; }
 .dark .force-light-theme .text-gray-500 { color: #6b7280 !important; }
 .dark .force-light-theme .text-gray-400 { color: #9ca3af !important; }
+
+
+/* =======================================================
+   MEMORY DETAIL MODAL - Full Content Fix
+   ======================================================= */
+/* Ensure description shows fully */
+.memory-detail-description {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Ensure the content area can scroll */
+.memory-detail-content {
+  overflow-y: auto !important;
+  max-height: 100% !important;
+  height: auto !important;
+}
+
+/* Fix for the book page layout */
+.light-book-page .flex-1.overflow-y-auto {
+  overflow-y: auto !important;
+  max-height: 100% !important;
+}
+
+/* Remove any hidden overflow */
+.light-book-page {
+  overflow: visible !important;
+}
