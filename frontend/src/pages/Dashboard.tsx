@@ -13,7 +13,7 @@ import {
   Copy,
   Check
 } from 'lucide-react';
-import { api, cachedGet, prefetch } from '../services/api';
+import { cachedGet, prefetch } from '../services/api';
 import Envelope from '../components/Envelope';
 import TimeCounter from '../components/TimeCounter';
 import YearCard from '../components/YearCard';
