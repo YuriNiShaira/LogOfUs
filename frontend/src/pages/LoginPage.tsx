@@ -41,7 +41,7 @@ const LoginPage: React.FC = () => {
     if (loading) return;
     
     if (!formData.username.trim() || !formData.password) {
-      toast.error('Please fill in both fields 💕');
+      toast.error('Please fill in both fields');
       return;
     }
     
@@ -60,7 +60,7 @@ const LoginPage: React.FC = () => {
       }
       
       login(userData, tokens.access, tokens.refresh);
-      toast.success(response.data.message || 'Welcome back! 💕');
+      toast.success(response.data.message || 'Welcome back!');
       setIsOpening(true);
       
       setTimeout(() => { 
@@ -71,7 +71,7 @@ const LoginPage: React.FC = () => {
       setLoading(false);
       setIsOpening(false);
       
-      let errorMessage = 'Invalid credentials. Try again 💕';
+      let errorMessage = 'Invalid credentials. Try again';
       
       if (error.response?.data?.details?.non_field_errors) {
         errorMessage = error.response.data.details.non_field_errors[0];
