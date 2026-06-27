@@ -273,7 +273,7 @@ class SongRecommendation(models.Model):
     spotify_link = models.URLField(blank=True)
     is_listened = models.BooleanField(default=False)
     rating = models.IntegerField(null=True, blank=True, choices=[(i, str(i)) for i in range(1, 6)])
-    mood = models.CharField(max_length=20, choices=MOOD_CHOICES, default='other')  # ✅ new
+    mood = models.CharField(max_length=20, choices=MOOD_CHOICES, default='other') 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

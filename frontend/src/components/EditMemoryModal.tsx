@@ -39,7 +39,8 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
   const [isFavorite, setIsFavorite] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>('');
-  const [keepExistingImage, setKeepExistingImage] = useState(true);
+  const [shouldDeleteImage, setShouldDeleteImage] = useState(false);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const queryClient = useQueryClient();
@@ -90,7 +91,8 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
       setMemoryType(memory.memory_type);
       setIsFavorite(memory.is_favorite);
       setPreview(memory.image || '');
-      setKeepExistingImage(true);
+      setShouldDeleteImage(false);
+      setImage(null);
     }
   }, [memory]);
 
@@ -136,7 +138,7 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
     const file = e.target.files?.[0];
     if (file) {
       setImage(file);
-      setKeepExistingImage(false);
+      setShouldDeleteImage(false);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
@@ -148,7 +150,7 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
   const handleRemoveImage = () => {
     setImage(null);
     setPreview('');
-    setKeepExistingImage(false);
+    setShouldDeleteImage(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -163,16 +165,19 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
     formData.append('title', title);
     formData.append('date', date);
     formData.append('description', description);
-    formData.append('location', location);
-    formData.append('favorite_quote', favoriteQuote);
+    formData.append('location', location || '');
+    formData.append('favorite_quote', favoriteQuote || '');
     formData.append('memory_type', memoryType);
-    formData.append('is_favorite', isFavorite.toString());
+    formData.append('is_favorite', isFavorite ? 'true' : 'false');
     
-    if (image) {
+    // ✅ FIX: Handle image deletion properly
+    if (shouldDeleteImage) {
+      // Send a special flag to delete the image
+      formData.append('delete_image', 'true');
+    } else if (image) {
       formData.append('image', image);
-    } else if (!keepExistingImage) {
-      formData.append('image', '');
     }
+    // If neither, keep existing image
 
     updateMemoryMutation.mutate(formData);
   };
@@ -190,7 +195,7 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
           />
           
           <motion.div
-            id="edit-memory-modal-root" // The ID that anchors our injected styles
+            id="edit-memory-modal-root"
             initial={{ scale: 0.95, y: 20, rotate: -1 }}
             animate={{ scale: 1, y: 0, rotate: 0 }}
             exit={{ scale: 0.95, y: 20, rotate: 1 }}
@@ -299,6 +304,15 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
                             <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
                             <p className="font-handwriting text-xl text-gray-500">Paste photo here...</p>
                           </label>
+                        )}
+                        
+                        {/* ✅ Show delete image indicator */}
+                        {shouldDeleteImage && (
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-sm z-20">
+                            <span className="text-white font-handwriting text-xl bg-red-500/80 px-4 py-2 rounded-full">
+                              ✕ Image will be removed
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>

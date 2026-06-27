@@ -205,6 +205,56 @@ class MemoryViewSet(CoupleFilteredViewSet):
             memory.image = image_url
             memory.save(update_fields=['image'])
 
+    def update(self, request, *args, **kwargs):
+        """Update memory with proper image handling"""
+        memory = self.get_object()
+        couple = get_couple(request)
+        
+        # Handle image deletion
+        delete_image = request.data.get('delete_image') == 'true'
+        
+        # Handle new image upload
+        image_file = request.FILES.get('image')
+        
+        if delete_image:
+            memory.image = None
+            memory.save(update_fields=['image'])
+        
+        # If new image is uploaded, upload it
+        elif image_file:
+            image_url = upload_to_supabase(image_file)
+            if image_url:
+                memory.image = image_url
+                memory.save(update_fields=['image'])
+        
+        # Update other fields
+        serializer = self.get_serializer(memory, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        
+        # Prevent future dates
+        memory_date = serializer.validated_data.get('date')
+        if memory_date and memory_date > timezone.now().date():
+            raise drf_serializers.ValidationError({'date': 'You cannot set a memory in the future! 📅'})
+        
+        # Validate date belongs to the year
+        year_id = request.data.get('year') or memory.year_id
+        if year_id and memory_date:
+            try:
+                year_obj = Year.objects.get(id=year_id, couple=couple)
+                start, end = year_obj.get_date_range()
+                if not (start <= memory_date <= end):
+                    raise drf_serializers.ValidationError({'date': f'This date must be between {start.strftime("%b %d, %Y")} and {end.strftime("%b %d, %Y")} for Year {year_obj.year_number}.'})
+            except Year.DoesNotExist:
+                pass
+        
+        self.perform_update(serializer)
+        
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        """Save the updated memory"""
+        serializer.save()
+
 class LoveLetterViewSet(CoupleFilteredViewSet):
     queryset = LoveLetter.objects.filter(is_active=True)
     serializer_class = LoveLetterSerializer
