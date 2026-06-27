@@ -40,12 +40,11 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>('');
   const [shouldDeleteImage, setShouldDeleteImage] = useState(false);
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const queryClient = useQueryClient();
 
-  // THE NUCLEAR OPTION: Inject styles directly into the document head to guarantee they win
+  // Inject styles to force light mode
   useEffect(() => {
     if (isOpen) {
       const styleId = 'force-light-inputs-style';
@@ -81,6 +80,7 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
     }
   }, [isOpen]);
 
+  // Reset form when memory changes
   useEffect(() => {
     if (memory) {
       setTitle(memory.title);
@@ -111,8 +111,8 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
       toast.success('Journal entry updated! ✍️');
       onClose();
     },
-    onError: () => {
-      toast.error('Failed to update memory. Please try again.');
+    onError: (error: any) => {
+      toast.error(error.response?.data?.error || 'Failed to update memory. Please try again.');
     },
   });
 
@@ -170,14 +170,14 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
     formData.append('memory_type', memoryType);
     formData.append('is_favorite', isFavorite ? 'true' : 'false');
     
-    // ✅ FIX: Handle image deletion properly
     if (shouldDeleteImage) {
-      // Send a special flag to delete the image
+      // User explicitly wants to delete the image
       formData.append('delete_image', 'true');
     } else if (image) {
+      // User uploaded a new image
       formData.append('image', image);
     }
-    // If neither, keep existing image
+    // If neither, keep existing image (don't send anything)
 
     updateMemoryMutation.mutate(formData);
   };
@@ -306,7 +306,7 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
                           </label>
                         )}
                         
-                        {/* ✅ Show delete image indicator */}
+                        {/* Show delete indicator */}
                         {shouldDeleteImage && (
                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-sm z-20">
                             <span className="text-white font-handwriting text-xl bg-red-500/80 px-4 py-2 rounded-full">
