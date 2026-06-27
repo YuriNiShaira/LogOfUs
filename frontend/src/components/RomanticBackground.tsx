@@ -26,7 +26,7 @@ const RomanticBackground: React.FC = () => {
   const { theme } = useTheme();
   const [enablePetals, setEnablePetals] = useState(true);
 
-  // Load petal setting from localStorage
+  // Listen for petal setting changes
   useEffect(() => {
     const savedSettings = localStorage.getItem('user_settings');
     if (savedSettings) {
@@ -37,10 +37,7 @@ const RomanticBackground: React.FC = () => {
         // ignore
       }
     }
-  }, []);
 
-  // Listen for storage changes (when settings update in another tab)
-  useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'user_settings') {
         try {
@@ -55,7 +52,7 @@ const RomanticBackground: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // ✅ Reduced stars: 50 → 30
+  // Stars for dark mode
   const stars = useMemo(() => 
     Array.from({ length: 30 }, (_, i) => ({
       id: `star-${i}`,
@@ -68,7 +65,7 @@ const RomanticBackground: React.FC = () => {
     })), []
   );
 
-  // ✅ Only create petals if enabled
+  // Only create petals if enabled
   const { largePetals, mediumPetals, smallPetals, extraPetals } = useMemo(() => {
     if (!enablePetals) {
       return { largePetals: [], mediumPetals: [], smallPetals: [], extraPetals: [] };
@@ -130,8 +127,10 @@ const RomanticBackground: React.FC = () => {
     return { largePetals, mediumPetals, smallPetals, extraPetals };
   }, [enablePetals]);
 
-  // If petals are disabled, only show the background gradient
-  if (!enablePetals && theme !== 'dark') {
+  const isDark = theme === 'dark';
+
+  // If petals are disabled and light mode, just show the background
+  if (!enablePetals && !isDark) {
     return (
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, #FFF5F5 0%, #FFE8EB 30%, #FFD9E2 60%, #FFC8D3 100%)' }} />
@@ -141,7 +140,7 @@ const RomanticBackground: React.FC = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {theme === 'dark' ? (
+      {isDark ? (
         <>
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, #0d0a1a 0%, #1a1030 30%, #2d1a30 60%, #1a1020 100%)' }} />
 
