@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -24,6 +24,36 @@ const SmallPetal = ({ size, rotation, opacity }: { size: number; rotation: numbe
 
 const RomanticBackground: React.FC = () => {
   const { theme } = useTheme();
+  const [enablePetals, setEnablePetals] = useState(true);
+
+  // Load petal setting from localStorage
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('user_settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        setEnablePetals(settings.enablePetals !== undefined ? settings.enablePetals : true);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
+
+  // Listen for storage changes (when settings update in another tab)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user_settings') {
+        try {
+          const settings = JSON.parse(e.newValue || '{}');
+          setEnablePetals(settings.enablePetals !== undefined ? settings.enablePetals : true);
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // ✅ Reduced stars: 50 → 30
   const stars = useMemo(() => 
@@ -38,8 +68,12 @@ const RomanticBackground: React.FC = () => {
     })), []
   );
 
-  // ✅ Reduced all petals by ~40%
+  // ✅ Only create petals if enabled
   const { largePetals, mediumPetals, smallPetals, extraPetals } = useMemo(() => {
+    if (!enablePetals) {
+      return { largePetals: [], mediumPetals: [], smallPetals: [], extraPetals: [] };
+    }
+
     const petalColors = [
       'rgba(255, 182, 193, 0.7)',
       'rgba(255, 192, 203, 0.65)',
@@ -47,7 +81,7 @@ const RomanticBackground: React.FC = () => {
       'rgba(255, 170, 190, 0.6)',
     ];
 
-    const largePetals = Array.from({ length: 8 }, (_, i) => ({  // 15 → 8
+    const largePetals = Array.from({ length: 8 }, (_, i) => ({
       id: `large-${i}`,
       left: `${Math.random() * 100}%`,
       delay: Math.random() * 15,
@@ -59,7 +93,7 @@ const RomanticBackground: React.FC = () => {
       color: petalColors[Math.floor(Math.random() * petalColors.length)],
     }));
 
-    const mediumPetals = Array.from({ length: 12 }, (_, i) => ({  // 25 → 12
+    const mediumPetals = Array.from({ length: 12 }, (_, i) => ({
       id: `medium-${i}`,
       left: `${Math.random() * 100}%`,
       delay: Math.random() * 12,
@@ -71,7 +105,7 @@ const RomanticBackground: React.FC = () => {
       color: petalColors[Math.floor(Math.random() * petalColors.length)],
     }));
 
-    const smallPetals = Array.from({ length: 18 }, (_, i) => ({  // 35 → 18
+    const smallPetals = Array.from({ length: 18 }, (_, i) => ({
       id: `small-${i}`,
       left: `${Math.random() * 100}%`,
       delay: Math.random() * 10,
@@ -82,7 +116,7 @@ const RomanticBackground: React.FC = () => {
       sway: 15 + Math.random() * 30,
     }));
 
-    const extraPetals = Array.from({ length: 20 }, (_, i) => ({  // 40 → 20
+    const extraPetals = Array.from({ length: 20 }, (_, i) => ({
       id: `extra-${i}`,
       left: `${Math.random() * 100}%`,
       delay: Math.random() * 18,
@@ -94,7 +128,16 @@ const RomanticBackground: React.FC = () => {
     }));
 
     return { largePetals, mediumPetals, smallPetals, extraPetals };
-  }, []);
+  }, [enablePetals]);
+
+  // If petals are disabled, only show the background gradient
+  if (!enablePetals && theme !== 'dark') {
+    return (
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, #FFF5F5 0%, #FFE8EB 30%, #FFD9E2 60%, #FFC8D3 100%)' }} />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -117,7 +160,6 @@ const RomanticBackground: React.FC = () => {
             />
           ))}
 
-          {/* ✅ Reduced big stars: 8 → 4 */}
           {Array.from({ length: 4 }, (_, i) => (
             <motion.div
               key={`big-star-${i}`}
@@ -145,86 +187,91 @@ const RomanticBackground: React.FC = () => {
             transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', repeatType: 'reverse' }}
           />
 
-          {/* Large petals */}
-          {largePetals.map((petal) => (
-            <motion.div key={petal.id} className="absolute"
-              style={{ left: petal.left, opacity: petal.opacity, zIndex: 30 }}
-              initial={{ top: '-10%', x: 0, rotate: petal.rotation }}
-              animate={{ top: '110%', x: [0, petal.sway * 0.5, -petal.sway * 0.3, 0] }}
-              transition={{
-                top: { duration: petal.duration, repeat: Infinity, delay: petal.delay, ease: 'linear' },
-                x: { duration: petal.duration * 0.5, repeat: Infinity, delay: petal.delay, ease: 'easeInOut' },
-              }}>
-              <CherryBlossomPetal size={petal.size} rotation={petal.rotation} opacity={petal.opacity} color={petal.color} />
-            </motion.div>
-          ))}
+          {/* Only render petals if enabled */}
+          {enablePetals && (
+            <>
+              {/* Large petals */}
+              {largePetals.map((petal) => (
+                <motion.div key={petal.id} className="absolute"
+                  style={{ left: petal.left, opacity: petal.opacity, zIndex: 30 }}
+                  initial={{ top: '-10%', x: 0, rotate: petal.rotation }}
+                  animate={{ top: '110%', x: [0, petal.sway * 0.5, -petal.sway * 0.3, 0] }}
+                  transition={{
+                    top: { duration: petal.duration, repeat: Infinity, delay: petal.delay, ease: 'linear' },
+                    x: { duration: petal.duration * 0.5, repeat: Infinity, delay: petal.delay, ease: 'easeInOut' },
+                  }}>
+                  <CherryBlossomPetal size={petal.size} rotation={petal.rotation} opacity={petal.opacity} color={petal.color} />
+                </motion.div>
+              ))}
 
-          {/* Medium petals */}
-          {mediumPetals.map((petal) => (
-            <motion.div key={petal.id} className="absolute"
-              style={{ left: petal.left, zIndex: 20 }}
-              initial={{ top: '-5%', x: 0, rotate: petal.rotation }}
-              animate={{ top: '110%', x: [0, -petal.sway * 0.4, petal.sway * 0.2, 0] }}
-              transition={{
-                top: { duration: petal.duration, repeat: Infinity, delay: petal.delay, ease: 'linear' },
-                x: { duration: petal.duration * 0.45, repeat: Infinity, delay: petal.delay, ease: 'easeInOut' },
-              }}>
-              <CherryBlossomPetal size={petal.size} rotation={petal.rotation} opacity={petal.opacity} color={petal.color} />
-            </motion.div>
-          ))}
+              {/* Medium petals */}
+              {mediumPetals.map((petal) => (
+                <motion.div key={petal.id} className="absolute"
+                  style={{ left: petal.left, zIndex: 20 }}
+                  initial={{ top: '-5%', x: 0, rotate: petal.rotation }}
+                  animate={{ top: '110%', x: [0, -petal.sway * 0.4, petal.sway * 0.2, 0] }}
+                  transition={{
+                    top: { duration: petal.duration, repeat: Infinity, delay: petal.delay, ease: 'linear' },
+                    x: { duration: petal.duration * 0.45, repeat: Infinity, delay: petal.delay, ease: 'easeInOut' },
+                  }}>
+                  <CherryBlossomPetal size={petal.size} rotation={petal.rotation} opacity={petal.opacity} color={petal.color} />
+                </motion.div>
+              ))}
 
-          {/* Small petals */}
-          {smallPetals.map((petal) => (
-            <motion.div key={petal.id} className="absolute"
-              style={{ left: petal.left, zIndex: 15 }}
-              initial={{ top: '-5%', x: 0 }}
-              animate={{ top: '110%', x: [0, petal.sway * 0.3, -petal.sway * 0.2, 0] }}
-              transition={{
-                top: { duration: petal.duration, repeat: Infinity, delay: petal.delay, ease: 'linear' },
-                x: { duration: petal.duration * 0.4, repeat: Infinity, delay: petal.delay, ease: 'easeInOut' },
-              }}>
-              <SmallPetal size={petal.size} rotation={petal.rotation} opacity={petal.opacity} />
-            </motion.div>
-          ))}
+              {/* Small petals */}
+              {smallPetals.map((petal) => (
+                <motion.div key={petal.id} className="absolute"
+                  style={{ left: petal.left, zIndex: 15 }}
+                  initial={{ top: '-5%', x: 0 }}
+                  animate={{ top: '110%', x: [0, petal.sway * 0.3, -petal.sway * 0.2, 0] }}
+                  transition={{
+                    top: { duration: petal.duration, repeat: Infinity, delay: petal.delay, ease: 'linear' },
+                    x: { duration: petal.duration * 0.4, repeat: Infinity, delay: petal.delay, ease: 'easeInOut' },
+                  }}>
+                  <SmallPetal size={petal.size} rotation={petal.rotation} opacity={petal.opacity} />
+                </motion.div>
+              ))}
 
-          {/* Extra tiny petals */}
-          {extraPetals.map((petal) => (
-            <motion.div key={petal.id} className="absolute"
-              style={{ left: petal.left, zIndex: 10 }}
-              initial={{ top: '-5%', x: 0 }}
-              animate={{ top: '110%', x: [0, petal.sway * 0.2, -petal.sway * 0.1, 0] }}
-              transition={{
-                top: { duration: petal.duration, repeat: Infinity, delay: petal.delay, ease: 'linear' },
-                x: { duration: petal.duration * 0.35, repeat: Infinity, delay: petal.delay, ease: 'easeInOut' },
-              }}>
-              <SmallPetal size={petal.size} rotation={petal.rotation} opacity={petal.opacity} />
-            </motion.div>
-          ))}
+              {/* Extra tiny petals */}
+              {extraPetals.map((petal) => (
+                <motion.div key={petal.id} className="absolute"
+                  style={{ left: petal.left, zIndex: 10 }}
+                  initial={{ top: '-5%', x: 0 }}
+                  animate={{ top: '110%', x: [0, petal.sway * 0.2, -petal.sway * 0.1, 0] }}
+                  transition={{
+                    top: { duration: petal.duration, repeat: Infinity, delay: petal.delay, ease: 'linear' },
+                    x: { duration: petal.duration * 0.35, repeat: Infinity, delay: petal.delay, ease: 'easeInOut' },
+                  }}>
+                  <SmallPetal size={petal.size} rotation={petal.rotation} opacity={petal.opacity} />
+                </motion.div>
+              ))}
 
-          {/* ✅ Reduced wind petals: 15 → 6 */}
-          {[...Array(6)].map((_, i) => (
-            <motion.div key={`wind-${i}`} className="absolute"
-              style={{ top: `${Math.random() * 100}%`, zIndex: 12 }}
-              initial={{ left: '-10%', rotate: Math.random() * 360 }}
-              animate={{ left: '110%', y: [0, Math.random() * 20 - 10, 0], rotate: [0, Math.random() * 180] }}
-              transition={{
-                left: { duration: 15 + Math.random() * 10, repeat: Infinity, delay: i * 2, ease: 'linear' },
-                y: { duration: 5 + Math.random() * 4, repeat: Infinity, ease: 'easeInOut', repeatType: 'reverse' },
-                rotate: { duration: 8 + Math.random() * 5, repeat: Infinity, ease: 'linear' },
-              }}>
-              <SmallPetal size={5 + Math.random() * 10} rotation={Math.random() * 360} opacity={0.4 + Math.random() * 0.3} />
-            </motion.div>
-          ))}
+              {/* Wind petals */}
+              {[...Array(6)].map((_, i) => (
+                <motion.div key={`wind-${i}`} className="absolute"
+                  style={{ top: `${Math.random() * 100}%`, zIndex: 12 }}
+                  initial={{ left: '-10%', rotate: Math.random() * 360 }}
+                  animate={{ left: '110%', y: [0, Math.random() * 20 - 10, 0], rotate: [0, Math.random() * 180] }}
+                  transition={{
+                    left: { duration: 15 + Math.random() * 10, repeat: Infinity, delay: i * 2, ease: 'linear' },
+                    y: { duration: 5 + Math.random() * 4, repeat: Infinity, ease: 'easeInOut', repeatType: 'reverse' },
+                    rotate: { duration: 8 + Math.random() * 5, repeat: Infinity, ease: 'linear' },
+                  }}>
+                  <SmallPetal size={5 + Math.random() * 10} rotation={Math.random() * 360} opacity={0.4 + Math.random() * 0.3} />
+                </motion.div>
+              ))}
 
-          {/* ✅ Reduced floating petals: 20 → 8 */}
-          {[...Array(8)].map((_, i) => (
-            <motion.div key={`float-${i}`} className="absolute"
-              style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, zIndex: 8 }}
-              animate={{ y: [-20, 20, -15, 20], x: [-10, 15, -8, 10], rotate: [0, 180], opacity: [0.15, 0.35, 0.15] }}
-              transition={{ duration: 14 + Math.random() * 10, repeat: Infinity, delay: i * 1.2, ease: 'easeInOut' }}>
-              <SmallPetal size={4 + Math.random() * 8} rotation={Math.random() * 360} opacity={0.2 + Math.random() * 0.3} />
-            </motion.div>
-          ))}
+              {/* Floating petals */}
+              {[...Array(8)].map((_, i) => (
+                <motion.div key={`float-${i}`} className="absolute"
+                  style={{ left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`, zIndex: 8 }}
+                  animate={{ y: [-20, 20, -15, 20], x: [-10, 15, -8, 10], rotate: [0, 180], opacity: [0.15, 0.35, 0.15] }}
+                  transition={{ duration: 14 + Math.random() * 10, repeat: Infinity, delay: i * 1.2, ease: 'easeInOut' }}>
+                  <SmallPetal size={4 + Math.random() * 8} rotation={Math.random() * 360} opacity={0.2 + Math.random() * 0.3} />
+                </motion.div>
+              ))}
+            </>
+          )}
         </>
       )}
     </div>

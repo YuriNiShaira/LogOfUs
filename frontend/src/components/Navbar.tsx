@@ -14,6 +14,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
 import ThemeToggle from './ThemeToggle';
+import SettingsDropdown from './SettingsDropdown';
 
 interface NavItem {
   icon: React.ElementType;
@@ -49,6 +50,8 @@ const Navbar: React.FC = () => {
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+
+  const isDark = theme === 'dark';
 
   return (
     <>
@@ -214,25 +217,20 @@ const Navbar: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 navbar-paper-texture relative ${
-          theme === 'dark'
+          isDark
             ? 'bg-linear-to-r from-amber-950/75 via-amber-900/65 to-amber-950/75 border-amber-800/50 shadow-xl shadow-amber-950/30'
             : 'bg-linear-to-r from-amber-50/70 via-yellow-50/60 to-amber-50/70 border-amber-200/50 shadow-lg shadow-amber-200/15'
         }`}
       >
         <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
-          {/* Logo Section - Enhanced */}
+          {/* Logo Section */}
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="logo-container flex items-center gap-4 cursor-pointer shrink-0 group relative"
             onClick={() => navigate('/dashboard')}
           >
-            {/* Ribbon bookmark */}
             <div className="ribbon-bookmark-left" />
-
-            {/* Left spine */}
             <div className="diary-spine-left" />
-
-            {/* Logo - SVG Favicon */}
             <div className="relative w-11 h-11 rounded-lg flex items-center justify-center shadow-lg overflow-hidden">
               <div className="logo-shine" />
               <img 
@@ -241,24 +239,21 @@ const Navbar: React.FC = () => {
                 className="w-full h-full object-cover"
               />
             </div>
-
-            {/* Title section */}
             <div className="flex flex-col gap-0.5">
               <h1 className={`text-2xl book-title-font leading-none transition-colors duration-300 ${
-                theme === 'dark' ? 'text-amber-100' : 'text-amber-900'
+                isDark ? 'text-amber-100' : 'text-amber-900'
               }`}>
                 LogOfUs
               </h1>
-              {/* ✅ DYNAMIC: Shows couple name */}
               <p className={`text-xs leading-none font-serif italic font-medium transition-colors duration-300 ${
-                theme === 'dark' ? 'text-amber-300/75' : 'text-amber-700/65'
+                isDark ? 'text-amber-300/75' : 'text-amber-700/65'
               }`}>
                 {user?.couple_name || 'Loading...'} 💕
               </p>
             </div>
           </motion.div>
 
-          {/* Navigation Links - Centered */}
+          {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-2 mx-4">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -271,11 +266,11 @@ const Navbar: React.FC = () => {
                   onClick={() => navigate(item.path)}
                   className={`nav-item-hover nav-link-underline relative flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 font-semibold tracking-wide text-sm group ${
                     active
-                      ? `${theme === 'dark' 
+                      ? `${isDark 
                           ? 'text-red-400 bg-red-950/40 shadow-md shadow-red-900/20' 
                           : 'text-red-600 bg-red-100/60 shadow-md shadow-red-200/30'
                         } ${active ? 'active' : ''}`
-                      : theme === 'dark'
+                      : isDark
                       ? 'text-amber-200/75 hover:bg-amber-900/40 hover:text-amber-100'
                       : 'text-amber-800/75 hover:bg-amber-100/50 hover:text-amber-900'
                   }`}
@@ -289,7 +284,8 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Right side actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <SettingsDropdown />
             <ThemeToggle />
             
             {/* Mobile menu button */}
@@ -298,7 +294,7 @@ const Navbar: React.FC = () => {
               whileTap={{ scale: 0.92 }}
               onClick={() => setIsNavOpen(!isNavOpen)}
               className={`md:hidden p-2.5 rounded-lg transition-all ${
-                theme === 'dark'
+                isDark
                   ? 'text-amber-300/70 hover:bg-amber-900/50'
                   : 'text-amber-800/70 hover:bg-amber-100/50'
               }`}
@@ -315,7 +311,7 @@ const Navbar: React.FC = () => {
               whileTap={{ scale: 0.94 }}
               onClick={handleLogout}
               className={`hidden md:flex nav-item-hover items-center gap-2 px-4 py-2.5 rounded-lg transition-all text-sm font-semibold tracking-wide ${
-                theme === 'dark'
+                isDark
                   ? 'text-amber-200/75 hover:bg-amber-900/40 hover:text-amber-100'
                   : 'text-amber-800/75 hover:bg-amber-100/50 hover:text-amber-900'
               }`}
@@ -335,14 +331,12 @@ const Navbar: React.FC = () => {
               exit={{ opacity: 0, height: 0, y: -10 }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
               className={`md:hidden border-t relative overflow-hidden ${
-                theme === 'dark'
+                isDark
                   ? 'border-amber-800/40 bg-linear-to-b from-amber-900/90 to-amber-950/90'
                   : 'border-amber-200/50 bg-linear-to-b from-amber-50/90 to-yellow-50/90'
               } backdrop-blur-xl`}
             >
-              {/* Ribbon marker */}
               <div className="mobile-nav-ribbon" />
-
               <div className="px-6 py-4 space-y-1">
                 {navItems.map((item, idx) => {
                   const Icon = item.icon;
@@ -361,11 +355,11 @@ const Navbar: React.FC = () => {
                       }}
                       className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-lg transition-all relative group font-semibold tracking-wide ${
                         active
-                          ? `${theme === 'dark' 
+                          ? `${isDark 
                               ? 'bg-red-950/50 text-red-400 shadow-md shadow-red-900/20' 
                               : 'bg-red-100/70 text-red-600 shadow-md shadow-red-200/30'
                             }`
-                          : theme === 'dark'
+                          : isDark
                           ? 'text-amber-200/75 hover:bg-amber-900/50'
                           : 'text-amber-800/75 hover:bg-amber-100/60'
                       }`}
@@ -382,8 +376,7 @@ const Navbar: React.FC = () => {
                   );
                 })}
 
-                {/* Divider */}
-                <div className={`my-2 page-divider ${theme === 'dark' ? 'text-amber-700' : 'text-amber-300'}`} />
+                <div className={`my-2 page-divider ${isDark ? 'text-amber-700' : 'text-amber-300'}`} />
 
                 <motion.button
                   initial={{ opacity: 0, x: -20 }}
@@ -396,7 +389,7 @@ const Navbar: React.FC = () => {
                     setIsNavOpen(false);
                   }}
                   className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-lg transition-all font-semibold tracking-wide ${
-                    theme === 'dark'
+                    isDark
                       ? 'text-amber-200/75 hover:bg-amber-900/50'
                       : 'text-amber-800/75 hover:bg-amber-100/60'
                   }`}
