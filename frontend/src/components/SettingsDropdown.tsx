@@ -9,7 +9,6 @@ import {
   Save,
   Eye,
   EyeOff,
-  Users,
   Settings,
   BookHeart
 } from 'lucide-react';
@@ -247,10 +246,10 @@ const SettingsDropdown: React.FC = () => {
   const isDark = theme === 'dark';
 
   const tabs = [
-    { id: 'profile' as const, label: 'My Identity', icon: User },
-    { id: 'couple' as const, label: 'Our Story', icon: BookHeart },
+    { id: 'profile' as const, label: 'Profile', icon: User },
+    { id: 'couple' as const, label: 'Couple', icon: BookHeart },
     { id: 'security' as const, label: 'Privacy', icon: Lock },
-    { id: 'preferences' as const, label: 'Aesthetics', icon: Palette },
+    { id: 'preferences' as const, label: 'Preferences', icon: Palette },
   ];
 
   return (
