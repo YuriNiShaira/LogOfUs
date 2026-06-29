@@ -51,22 +51,22 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const [direction, setDirection] = useState(0);
   const [prevMemoryId, setPrevMemoryId] = useState<number | null>(null);
 
-  const splitIntoPages = (text: string, charsPerPage: number = 350) => {
+  const splitIntoPages = (text: string, charsPerPage: number = 300) => {
     if (!text) return [''];
-    if (text.length <= charsPerPage) return [text];
     
+    const words = text.split(/\s+/);
     const pages: string[] = [];
     let currentPageText = '';
-    const sentences = text.split(/(?<=[.!?])\s+/);
     
-    for (const sentence of sentences) {
-      if ((currentPageText + sentence).length <= charsPerPage) {
-        currentPageText += (currentPageText ? ' ' : '') + sentence;
+    for (const word of words) {
+      const spacing = currentPageText ? ' ' : '';
+      if ((currentPageText + spacing + word).length <= charsPerPage) {
+        currentPageText += spacing + word;
       } else {
         if (currentPageText) {
           pages.push(currentPageText.trim());
         }
-        currentPageText = sentence;
+        currentPageText = word;
       }
     }
     
@@ -312,7 +312,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
       <div className="w-full h-full flex flex-col p-8 md:p-12 font-serif text-lg leading-8 text-gray-700 whitespace-pre-line relative border-r border-[#E5E0D8]/40">
         <div className="pointer-events-none absolute inset-0 bottom-12 top-24 bg-[linear-gradient(transparent_31px,rgba(0,0,0,0.06)_32px)] bg-size-[100%_32px] opacity-50" />
         
-        <div className="relative z-10 flex-1 flex flex-col justify-center pb-8">
+        <div className="relative z-10 flex-1 flex flex-col justify-start max-h-[380px] overflow-hidden pb-8">
           {pages[index * 2 - 1]}
         </div>
         
@@ -386,7 +386,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
             </>
           )}
 
-          <div className="flex-1 flex flex-col justify-center py-4 font-serif text-lg leading-8 text-gray-700 whitespace-pre-line min-h-60">
+          <div className="flex-1 flex flex-col justify-start max-h-[380px] overflow-hidden py-4 font-serif text-lg leading-8 text-gray-700 whitespace-pre-line">
             {isFirst ? pages[0] : pages[index * 2]}
           </div>
 
