@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -44,6 +44,8 @@ const MemoryCalendarPage: React.FC = () => {
   const [currentMemoryIndex, setCurrentMemoryIndex] = useState(0);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState<string>('');
+  
+  // Store all available dates across ALL years
   const [allAvailableDates, setAllAvailableDates] = useState<string[]>([]);
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
 
@@ -83,8 +85,37 @@ const MemoryCalendarPage: React.FC = () => {
 
   const isDark = theme === 'dark';
 
-  // Get all dates with memories across all years
-  const getAllDatesWithMemories = (): string[] => {
+  // Fetch ALL dates with memories across all years
+  const fetchAllDatesWithMemories = async () => {
+    try {
+      // Fetch memories across all years (without year/month filter)
+      const response = await api.get('/calendar/');
+      const data = response.data;
+      
+      if (data && data.memories) {
+        const dates = Object.keys(data.memories)
+          .filter(date => data.memories[date] && data.memories[date].length > 0)
+          .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        
+        setAllAvailableDates(dates);
+        return dates;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching all dates:', error);
+      return [];
+    }
+  };
+
+  // Fetch all dates when modal opens
+  useEffect(() => {
+    if (isDetailModalOpen) {
+      fetchAllDatesWithMemories();
+    }
+  }, [isDetailModalOpen]);
+
+  // Get all dates with memories from current data (fallback)
+  const getAllDatesFromData = (): string[] => {
     const allDates = Object.keys(allMemoriesData).filter(date => 
       allMemoriesData[date] && allMemoriesData[date].length > 0
     );
@@ -97,8 +128,12 @@ const MemoryCalendarPage: React.FC = () => {
     if (memories.length === 0) return;
     
     setSelectedDateStr(dateStr);
+    
+    // Update date index
     const dateIdx = allAvailableDates.indexOf(dateStr);
-    setCurrentDateIndex(dateIdx >= 0 ? dateIdx : 0);
+    if (dateIdx !== -1) {
+      setCurrentDateIndex(dateIdx);
+    }
     
     try {
       const memoryIds = memories.map(m => m.id);
@@ -128,9 +163,13 @@ const MemoryCalendarPage: React.FC = () => {
     if (memories.length > 0) {
       setSelectedDateStr(dateStr);
       
-      // Get all available dates for navigation
-      const allDates = getAllDatesWithMemories();
+      // Get all available dates (try API first, fallback to local data)
+      let allDates = await fetchAllDatesWithMemories();
+      if (allDates.length === 0) {
+        allDates = getAllDatesFromData();
+      }
       setAllAvailableDates(allDates);
+      
       const dateIdx = allDates.indexOf(dateStr);
       setCurrentDateIndex(dateIdx >= 0 ? dateIdx : 0);
       
@@ -166,7 +205,7 @@ const MemoryCalendarPage: React.FC = () => {
       return;
     }
     
-    // If we're on the last memory of this date, go to next date
+    // If we're on the last memory of this date, go to next date (even if it's next year)
     if (currentDateIndex < allAvailableDates.length - 1) {
       const nextDate = allAvailableDates[currentDateIndex + 1];
       goToDate(nextDate);
@@ -180,7 +219,7 @@ const MemoryCalendarPage: React.FC = () => {
       return;
     }
     
-    // If we're on the first memory of this date, go to previous date
+    // If we're on the first memory of this date, go to previous date (even if it's previous year)
     if (currentDateIndex > 0) {
       const prevDate = allAvailableDates[currentDateIndex - 1];
       goToDate(prevDate);
@@ -313,6 +352,7 @@ const MemoryCalendarPage: React.FC = () => {
         )}
       </div>
 
+      {/* MemoryDetailModal with Navigation - Using full data */}
       <MemoryDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => {
