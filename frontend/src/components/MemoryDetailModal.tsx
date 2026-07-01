@@ -51,22 +51,26 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const [direction, setDirection] = useState(0);
   const [prevMemoryId, setPrevMemoryId] = useState<number | null>(null);
 
-  const splitIntoPages = (text: string, charsPerPage: number = 300) => {
+  const splitIntoPages = (text: string, firstPageChars: number = 375, regularPageChars: number = 600) => {
     if (!text) return [''];
     
     const words = text.split(/\s+/);
     const pages: string[] = [];
     let currentPageText = '';
+    let isFirstPage = true;
     
     for (const word of words) {
       const spacing = currentPageText ? ' ' : '';
-      if ((currentPageText + spacing + word).length <= charsPerPage) {
+      const currentLimit = isFirstPage ? firstPageChars : regularPageChars;
+
+      if ((currentPageText + spacing + word).length <= currentLimit) {
         currentPageText += spacing + word;
       } else {
         if (currentPageText) {
           pages.push(currentPageText.trim());
         }
         currentPageText = word;
+        isFirstPage = false; 
       }
     }
     
@@ -87,23 +91,19 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const hasNextMemory = onNext !== undefined && typeof onNext === 'function' && currentIndex < totalMemories - 1;
   const hasPrevMemory = onPrev !== undefined && typeof onPrev === 'function' && currentIndex > 0;
 
-  // Check if there are more dates to navigate to
   const hasNextDate = totalDates > 0 && currentDateIndex < totalDates - 1;
   const hasPrevDate = totalDates > 0 && currentDateIndex > 0;
 
   const canGoNext = hasNextSpread || hasNextMemory || hasNextDate;
   const canGoPrev = hasPrevSpread || hasPrevMemory || hasPrevDate;
 
-  // Reset spread when memory changes
   useEffect(() => {
     setCurrentSpread(0);
     setIsFlipping(false);
   }, [memory?.id]);
 
-  // Handle date change with flip animation
   useEffect(() => {
     if (prevMemoryId !== null && memory?.id !== prevMemoryId) {
-      // This is a memory/date change - trigger flip animation
       setIsFlipping(true);
       setDirection(1);
       setTimeout(() => {
@@ -113,7 +113,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
     setPrevMemoryId(memory?.id ?? null);
   }, [memory?.id, prevMemoryId]);
 
-  // Reset prevMemoryId when modal opens
   useEffect(() => {
     if (isOpen) {
       setPrevMemoryId(memory?.id ?? null);
@@ -123,7 +122,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const turnPage = (dir: number) => {
     if (isFlipping) return;
     
-    // Going forward
     if (dir === 1) {
       if (hasNextSpread) {
         setIsFlipping(true);
@@ -131,15 +129,12 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
         setCurrentSpread((prev) => prev + 1);
         setTimeout(() => setIsFlipping(false), 900);
       } else if (hasNextMemory && onNext) {
-        // Go to next memory - let the useEffect handle the animation
         onNext();
         setCurrentSpread(0);
-        // Set a flag to trigger animation
         setDirection(1);
         setIsFlipping(true);
         setTimeout(() => setIsFlipping(false), 600);
       } else if (hasNextDate && onNext) {
-        // Go to next date - let the useEffect handle the animation
         onNext();
         setCurrentSpread(0);
         setDirection(1);
@@ -149,7 +144,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
       return;
     }
     
-    // Going backward
     if (dir === -1) {
       if (hasPrevSpread) {
         setIsFlipping(true);
@@ -157,14 +151,12 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
         setCurrentSpread((prev) => prev - 1);
         setTimeout(() => setIsFlipping(false), 900);
       } else if (hasPrevMemory && onPrev) {
-        // Go to previous memory - let the useEffect handle the animation
         onPrev();
         setCurrentSpread(0);
         setDirection(-1);
         setIsFlipping(true);
         setTimeout(() => setIsFlipping(false), 600);
       } else if (hasPrevDate && onPrev) {
-        // Go to previous date - let the useEffect handle the animation
         onPrev();
         setCurrentSpread(0);
         setDirection(-1);
@@ -190,9 +182,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const formattedDate = date ? new Date(date + 'T00:00:00') : null;
   const formattedCurrentDate = currentDateStr ? new Date(currentDateStr + 'T00:00:00') : null;
 
-  // ==========================================
-  // REALISTIC 3D BOOK FLIP VARIANTS
-  // ==========================================
   const flipDuration = 0.45;
 
   const leftVariants = {
@@ -257,9 +246,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
     exit: (direction: number) => ({ x: direction > 0 ? -30 : 30, opacity: 0 }),
   };
 
-  // ==========================================
-  // PAGE CONTENT RENDERERS
-  // ==========================================
   const renderLeftContent = (index: number) => {
     if (index === 0) {
       return (
@@ -312,7 +298,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
       <div className="w-full h-full flex flex-col p-8 md:p-12 font-serif text-lg leading-8 text-gray-700 whitespace-pre-line relative border-r border-[#E5E0D8]/40">
         <div className="pointer-events-none absolute inset-0 bottom-12 top-24 bg-[linear-gradient(transparent_31px,rgba(0,0,0,0.06)_32px)] bg-size-[100%_32px] opacity-50" />
         
-        <div className="relative z-10 flex-1 flex flex-col justify-start max-h-[380px] overflow-hidden pb-8">
+        <div className="relative z-10 flex-1 flex flex-col justify-start max-h-[460px] overflow-hidden pb-8">
           {pages[index * 2 - 1]}
         </div>
         
@@ -348,7 +334,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               <div className="mb-4 flex justify-between items-start shrink-0">
                 <div>
                   {onEdit && (
-                    <button onClick={() => onEdit(memory)} className="text-xs font-serif italic text-gray-400 hover:text-[#8C2332] transition-colors underline underline-offset-4">
+                    <button onClick={() => onEdit(memory)} className="text-xs font-serif italic text-gray-400 hover:text-[#8C2332] transition-colors underline underline-offset-4"> 
                       Edit Entry
                     </button>
                   )}
@@ -386,7 +372,8 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
             </>
           )}
 
-          <div className="flex-1 flex flex-col justify-start max-h-[380px] overflow-hidden py-4 font-serif text-lg leading-8 text-gray-700 whitespace-pre-line">
+          {/* Nilakihan din ang max-h dito para mas magamit ang buong vertical space ng papel */}
+          <div className="flex-1 flex flex-col justify-start max-h-[460px] overflow-hidden py-4 font-serif text-lg leading-8 text-gray-700 whitespace-pre-line">
             {isFirst ? pages[0] : pages[index * 2]}
           </div>
 
@@ -454,9 +441,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               <X className="h-4 w-4 md:h-5 md:w-5" />
             </button>
 
-            {/* ========================================== */}
             {/* DESKTOP VIEW */}
-            {/* ========================================== */}
             <div className="hidden md:block">
               <div className="relative overflow-visible rounded-xl bg-[#2C292A] p-2 pb-3 pr-3 shadow-[0_40px_80px_rgba(0,0,0,0.6)] dark:bg-[#1A1819]">
                 <div className="absolute bottom-1 left-2 right-2 top-2 rounded border border-[#E5E0D8]/50 bg-[#E5E0D8] dark:border-gray-700/50 dark:bg-gray-800" />
@@ -510,9 +495,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               </div>
             </div>
 
-            {/* ========================================== */}
             {/* MOBILE VIEW */}
-            {/* ========================================== */}
             <div className="md:hidden relative w-full max-h-[85vh] overflow-hidden rounded-2xl bg-[#FDFBF7] shadow-2xl flex flex-col">
               <div className="pointer-events-none absolute inset-0 top-32 bg-[linear-gradient(transparent_31px,rgba(0,0,0,0.04)_32px)] bg-size-[100%_32px] z-0" />
 
