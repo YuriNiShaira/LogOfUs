@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  Music, MapPin, Heart, Smile, Edit, Save,
-  Camera, Utensils, Tv, Home, Sparkles
+  Music, MapPin, Heart, Edit, Save,
+  Camera, Utensils, Tv,
 } from 'lucide-react';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
@@ -96,13 +96,6 @@ const FunFactsSection: React.FC<FunFactsSectionProps> = ({ yearId, yearNumber })
     { icon: MapPin, label: 'Fun Fact #6', key: 'places_visited' as keyof FunFacts, bg: 'bg-orange-100', rotate: 'rotate-1', placeholder: 'Share some fun facts' },
   ];
 
-  const storyCards = [
-    { icon: Sparkles, label: 'Best Moment', key: 'best_moment' as keyof FunFacts, placeholder: 'The most memorable moment...', rows: 3 },
-    { icon: Smile, label: 'Inside Jokes', key: 'inside_jokes' as keyof FunFacts, placeholder: 'Our special jokes...', rows: 3 },
-    { icon: Home, label: 'Highlights', key: 'highlights' as keyof FunFacts, placeholder: 'The best parts of this year...', rows: 3 },
-    { icon: Heart, label: 'Favorite word', key: 'memorable_quote' as keyof FunFacts, placeholder: 'Something special we said...', rows: 2 },
-  ];
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -188,53 +181,11 @@ const FunFactsSection: React.FC<FunFactsSectionProps> = ({ yearId, yearNumber })
                     className="w-full h-full bg-transparent resize-none outline-none text-center text-2xl font-handwriting text-gray-800 placeholder:text-gray-400"
                   />
                 ) : (
-                  <p className="text-2xl font-handwriting text-gray-800 leading-snug break-words break-all w-full line-clamp-5">
+                  <p className="text-2xl font-handwriting text-gray-800 leading-snug wrap-break-words break-all w-full line-clamp-5">
                     {displayValue || <span className="text-gray-400/60">Empty...</span>}
                   </p>
                 )}
               </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Notebook Stories Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-8">
-        {storyCards.map((card, idx) => {
-          const Icon = card.icon;
-          const value = formData[card.key] as string || '';
-          const displayValue = funFacts?.[card.key] as string || '';
-
-          return (
-            <motion.div
-              key={card.key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + (idx * 0.1) }}
-              className="bg-[#faf8f5] p-6 sm:p-8 rounded-sm shadow-md border-l-4 border-red-300 relative overflow-hidden"
-              style={{
-                backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #e5e7eb 31px, #e5e7eb 32px)',
-                backgroundAttachment: 'local'
-              }}
-            >
-              <div className="flex items-center gap-3 mb-4 bg-[#faf8f5] inline-block pr-4">
-                <Icon className="w-5 h-5 text-gray-600 inline mr-2" />
-                <h3 className="font-serif text-xl text-gray-800 inline">{card.label}</h3>
-              </div>
-              
-              {isEditing ? (
-                <textarea
-                  value={value}
-                  onChange={(e) => setFormData(prev => ({ ...prev, [card.key]: e.target.value }))}
-                  placeholder={card.placeholder}
-                  rows={card.rows}
-                  className="w-full bg-transparent resize-none outline-none font-handwriting text-2xl text-gray-800 leading-8 mt-[-6px]"
-                />
-              ) : (
-                <p className="font-handwriting text-2xl text-gray-800 leading-8 whitespace-pre-line mt-[-6px]">
-                  {displayValue || <span className="text-gray-400">Nothing written here yet...</span>}
-                </p>
-              )}
             </motion.div>
           );
         })}
