@@ -312,7 +312,7 @@ def get_stats(request):
             'days_together': 0
         })
     
-    total_years = Year.objects.filter(couple=couple).count()
+    total_years = Year.objects.filter(couple=couple).exclude(year_number=0).count()
     total_memories = Memory.objects.filter(couple=couple).count()
     favorite_memories = Memory.objects.filter(couple=couple, is_favorite=True).count()
     
