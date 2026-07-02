@@ -156,7 +156,7 @@ const YearCard: React.FC<YearCardProps> = ({ year, onClick }) => {
             whileHover={{ x: 5 }}
             className="flex items-center gap-2 text-sm uppercase tracking-widest font-sans font-bold text-rose-700 dark:text-rose-300"
           >
-            <span>Open Diary</span>
+            <span>Open memories</span>
             <span className="text-lg leading-none">→</span>
           </motion.div>
           
