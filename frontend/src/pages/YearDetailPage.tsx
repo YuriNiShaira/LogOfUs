@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Camera, Star, Gamepad2, Coffee, Music, Heart,
+  Plus, Camera, Star, Gamepad2, Coffee, Music, Heart, PawPrint, // ✅ ADD PawPrint
 } from 'lucide-react';
 import { api } from '../services/api';
 import CreateMemoryModal from '../components/CreateMemoryModal';
@@ -27,6 +27,7 @@ import {
   MemoriesControls,
 } from '../components/year-detail';
 import toast from 'react-hot-toast';
+import PetGallerySection from '../components/year-detail/PetGallerySection';
 
 interface Year {
   id: number;
@@ -50,7 +51,9 @@ interface Memory {
   year: number;
 }
 
-type TabType = 'memories' | 'funfacts' | 'anime' | 'playlist' | 'games';
+// ✅ ADD 'pets' to TabType
+type TabType = 'memories' | 'funfacts' | 'anime' | 'playlist' | 'games' | 'pets';
+
 type SortOrder = 'newest' | 'oldest';
 type LayoutStyle = 'scattered' | 'timeline' | 'masonry';
 
@@ -145,6 +148,7 @@ const YearDetailPage: React.FC = () => {
     { id: 'anime' as TabType, label: 'Watchlist', icon: Star, color: 'from-purple-500 to-pink-500' },
     { id: 'playlist' as TabType, label: 'Playlist', icon: Music, color: 'from-green-500 to-emerald-500' },
     { id: 'games' as TabType, label: 'Mini Games', icon: Gamepad2, color: 'from-blue-500 to-cyan-500' },
+    { id: 'pets' as TabType, label: '🐾 Pets', icon: PawPrint, color: 'from-amber-500 to-orange-500' },
   ];
 
   const stats = useMemo(() => {
@@ -383,6 +387,18 @@ const YearDetailPage: React.FC = () => {
           {activeTab === 'games' && (
             <motion.div key="games" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <GamesArena yearId={parseInt(yearId!)} yearNumber={year.year_number} />
+            </motion.div>
+          )}
+          {/* PETS TAB */}
+          {activeTab === 'pets' && (
+            <motion.div 
+              key="pets" 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-white/40 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-rose-100"
+            >
+              <PetGallerySection yearId={parseInt(yearId!)} yearNumber={year.year_number} />
             </motion.div>
           )}
         </AnimatePresence>

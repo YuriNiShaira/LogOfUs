@@ -215,7 +215,7 @@ const Navbar: React.FC = () => {
         initial={{ opacity: 0, y: -24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 navbar-paper-texture relative ${
+        className={`top-0 z-50 backdrop-blur-xl border-b transition-all duration-300 navbar-paper-texture relative ${
           isDark
             ? 'bg-linear-to-r from-amber-950/75 via-amber-900/65 to-amber-950/75 border-amber-800/50 shadow-xl shadow-amber-950/30'
             : 'bg-linear-to-r from-amber-50/70 via-yellow-50/60 to-amber-50/70 border-amber-200/50 shadow-lg shadow-amber-200/15'
