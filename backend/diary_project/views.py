@@ -6,13 +6,13 @@ from django.utils import timezone
 from .models import (
     Year, Memory, LoveLetter, AnimeRating, YearFunFacts, 
     AnimeCategory, CoupleGameScore, QuizScore, QuizQuestion, 
-    SongRecommendation, BucketListItem
+    SongRecommendation, BucketListItem, PetPhoto
 )
 from .serializers import (
     YearSerializer, MemorySerializer, LoveLetterSerializer, 
     AnimeRatingSerializer, YearFunFactsSerializer, AnimeCategorySerializer, 
     CoupleGameScoreSerializer, QuizScoreSerializer, QuizQuestionSerializer, 
-    SongRecommendationSerializer, BucketListItemSerializer,
+    SongRecommendationSerializer, BucketListItemSerializer, PetPhotoSerializer
 )
 from .permissions import IsCoupleMember
 from django.db.models import Avg
@@ -679,3 +679,29 @@ def calendar_memories(request):
         'total_dates': len(memories_by_date),
         'total_memories': queryset.count(),
     })
+
+
+class PetPhotoViewSet(CoupleFilteredViewSet):
+    queryset = PetPhoto.objects.all()
+    serializer_class = PetPhotoSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        year_id = self.request.query_params.get('year', None)
+        if year_id:
+            queryset = queryset.filter(year_id=year_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        couple = get_couple(self.request)
+        year_id = self.request.data.get('year')
+
+        if not year_id:
+            raise drf_serializers.ValidationError({'year': 'Year is required.'})
+        
+        image_file = self.request.FILES.get('image')
+        if not image_file:
+            raise drf_serializers.ValidationError({'image': 'Image file is required.'})
+        
+        image_url = upload_to_supabase(image_file, folder='pet_photos')
+        serializer.save(couple=couple, image=image_url)

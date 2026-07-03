@@ -14,6 +14,7 @@ router.register(r'quiz-questions', views.QuizQuestionViewSet)
 router.register(r'quiz-scores', views.QuizScoreViewSet)
 router.register(r'song-recommendations', views.SongRecommendationViewSet)
 router.register(r'bucketlist', views.BucketListViewSet)
+router.register(r'pet-photos', views.PetPhotoViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Year, Memory, LoveLetter, AnimeRating, YearFunFacts, AnimeCategory, CoupleGameScore, QuizScore, QuizQuestion, SongRecommendation, BucketListItem
+from .models import Year, Memory, LoveLetter, AnimeRating, YearFunFacts, AnimeCategory, CoupleGameScore, QuizScore, QuizQuestion, SongRecommendation, BucketListItem, PetPhoto
 
 class MemorySerializer(serializers.ModelSerializer):
     image = serializers.CharField(max_length=500, required=False, allow_null=True, allow_blank=True, read_only=True)
@@ -125,3 +125,10 @@ class BucketListItemSerializer(serializers.ModelSerializer):
     
     def get_added_by_display(self, obj):
         return obj.get_added_by_display()
+
+
+class PetPhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PetPhoto
+        fields = '__all__'
+        read_only_fields = ['couple']

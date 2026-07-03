@@ -327,3 +327,25 @@ class BucketListItem(models.Model):
         if notes:
             self.completion_notes = notes
         self.save()
+
+
+class PetPhoto(models.Model):
+    couple = models.ForeignKey(Couple, on_delete=models.CASCADE, related_name='pet_photos')
+    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='pet_photos')
+    image = models.URLField(max_length=500)
+    pet_name = models.CharField(max_length=100)
+    caption = models.TextField(blank=True)
+    date_taken = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date_taken', '-created_at']
+
+    def __str__(self):
+        return f"{self.pet_name} - {self.year.year_number}"
+
+    def save(self, *args, **kwargs):
+        if not self.date_taken:
+            self.date_taken = timezone.now().date()
+        super().save(*args, **kwargs)
