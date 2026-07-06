@@ -35,14 +35,29 @@ const PetGallerySection: React.FC<PetGallerySectionProps> = ({ yearId, yearNumbe
   
   const queryClient = useQueryClient();
 
-  const { data: petPhotos, isLoading } = useQuery<PetPhoto[]>({
+  const { data: petPhotos, isLoading, isError } = useQuery<PetPhoto[]>({
     queryKey: ['pet-photos', yearId],
     queryFn: async () => {
       const response = await api.get(`/pet-photos/?year=${yearId}`);
-      return response.data;
+      // ✅ Ensure we always return an array
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data && typeof response.data === 'object') {
+        // If the API returns an object with results property (like paginated response)
+        if (Array.isArray(response.data.results)) {
+          return response.data.results;
+        }
+        // If it's an object with other structure, try to convert or return empty array
+        console.warn('Unexpected pet photos data structure:', response.data);
+        return [];
+      }
+      return [];
     },
     enabled: !!yearId,
   });
+
+  // ✅ Ensure petPhotos is always an array for rendering
+  const photos = Array.isArray(petPhotos) ? petPhotos : [];
 
   const uploadMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -124,6 +139,23 @@ const PetGallerySection: React.FC<PetGallerySectionProps> = ({ yearId, yearNumbe
     );
   }
 
+  if (isError) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">🐾</div>
+        <p className="font-serif text-rose-400/70 italic">
+          Failed to load pet photos. Please try again.
+        </p>
+        <button
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['pet-photos', yearId] })}
+          className="mt-4 px-4 py-2 bg-rose-500 text-white rounded-lg font-serif hover:bg-rose-600 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -133,11 +165,11 @@ const PetGallerySection: React.FC<PetGallerySectionProps> = ({ yearId, yearNumbe
             <PawPrint className="w-6 h-6 text-amber-500" />
             Pet Gallery
             <span className="text-sm font-serif italic text-rose-400 font-normal">
-              {petPhotos?.length || 0} memories
+              {photos.length} memories
             </span>
           </h3>
           <p className="text-sm font-serif italic text-rose-400/70">
-            {petPhotos?.length === 0 
+            {photos.length === 0 
               ? 'Share your fur baby moments this year! 💕'
               : 'Every paw print tells a story'
             }
@@ -250,8 +282,8 @@ const PetGallerySection: React.FC<PetGallerySectionProps> = ({ yearId, yearNumbe
         </motion.div>
       )}
 
-      {/* Pet Photos Grid */}
-      {petPhotos?.length === 0 && !isUploading ? (
+      {/* Pet Photos Grid - ✅ Use 'photos' instead of 'petPhotos' */}
+      {photos.length === 0 && !isUploading ? (
         <div className="text-center py-16 border-2 border-dashed border-rose-200 rounded-xl">
           <div className="text-6xl mb-4">🐾</div>
           <p className="font-serif text-rose-400/70 italic">
@@ -263,7 +295,7 @@ const PetGallerySection: React.FC<PetGallerySectionProps> = ({ yearId, yearNumbe
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {petPhotos?.map((photo) => (
+          {photos.map((photo) => (
             <motion.div
               key={photo.id}
               initial={{ opacity: 0, scale: 0.9 }}
