@@ -8,6 +8,8 @@ import {
   ListChecks,
   Menu,
   X,
+  Star,
+  Gamepad2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -33,6 +35,8 @@ const Navbar: React.FC = () => {
     { icon: Home, label: 'Home', path: '/dashboard' },
     { icon: ListChecks, label: 'Bucket List', path: '/bucketlist' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
+    { icon: Star, label: 'Watchlist', path: '/watchlist-playlist' },
+    { icon: Gamepad2, label: 'Games', path: '/games' },
   ];
 
   const handleLogout = async () => {
@@ -40,6 +44,7 @@ const Navbar: React.FC = () => {
     try {
       await api.post('/auth/logout/', { refresh: refreshToken });
     } catch (error) {
+      // Silent fail
     }
     logout();
     toast.success('See you soon! 💕');
