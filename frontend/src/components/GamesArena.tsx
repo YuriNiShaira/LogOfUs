@@ -9,6 +9,8 @@ import {
   ArrowLeft,
   Trophy,
   Gamepad2,
+  Construction,
+  Wrench,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,12 +37,86 @@ interface LeaderboardData {
 }
 
 interface GamesArenaProps {
-  // ✅ Make year optional for global play
   yearId?: number;
   yearNumber?: number;
 }
 
 type GameType = 'tictactoe' | 'memorymatch' | 'menu';
+
+// Maintenance Overlay Component for Games
+const GameMaintenanceOverlay: React.FC<{ isDark: boolean; gameName: string }> = ({ isDark, gameName }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="absolute inset-0 z-20 flex items-center justify-center rounded-sm backdrop-blur-sm"
+    style={{
+      background: isDark 
+        ? 'rgba(42, 8, 21, 0.85)' 
+        : 'rgba(255, 250, 240, 0.85)'
+    }}
+  >
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ delay: 0.2 }}
+      className="text-center p-8 max-w-sm"
+    >
+      {/* Animated Tools Icon */}
+      <motion.div
+        animate={{ 
+          rotate: [0, -10, 10, -10, 0],
+        }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="flex justify-center gap-3 mb-4"
+      >
+        <div className={`p-3 rounded-full ${
+          isDark ? 'bg-amber-900/30' : 'bg-amber-100/50'
+        }`}>
+          <Wrench className="w-8 h-8 text-amber-500" />
+        </div>
+        <div className={`p-3 rounded-full ${
+          isDark ? 'bg-amber-900/30' : 'bg-amber-100/50'
+        }`}>
+          <Construction className="w-8 h-8 text-amber-500" />
+        </div>
+      </motion.div>
+
+      <h3 className={`text-2xl font-serif font-bold mb-2 ${
+        isDark ? 'text-amber-200' : 'text-amber-800'
+      }`}>
+        Under Construction 🛠️
+      </h3>
+      
+      <p className={`font-serif text-sm mb-3 ${
+        isDark ? 'text-stone-300' : 'text-stone-600'
+      }`}>
+        We're making {gameName} even more fun!
+      </p>
+      
+      <div className={`h-px w-16 mx-auto my-3 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent`} />
+      
+      <p className={`text-xs font-serif italic ${
+        isDark ? 'text-stone-400' : 'text-stone-500'
+      }`}>
+        ⏳ Coming soon with new features!
+      </p>
+
+      {/* Animated dots */}
+      <div className="flex justify-center gap-2 mt-4">
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+            className={`w-2 h-2 rounded-full ${
+              isDark ? 'bg-amber-500/40' : 'bg-amber-400/40'
+            }`}
+          />
+        ))}
+      </div>
+    </motion.div>
+  </motion.div>
+);
 
 const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
   const [activeGame, setActiveGame] = useState<GameType>('menu');
@@ -123,12 +199,14 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
       name: 'Tic Tac Toe',
       icon: Grid3x3,
       description: "The classic game of X's and O's... 💕",
+      underMaintenance: true,
     },
     {
       id: 'memorymatch' as GameType,
       name: 'Memory Match',
       icon: ImageIcon,
       description: 'Test your memory using your favorite moments together! 📸',
+      underMaintenance: true,
     },
   ];
 
@@ -177,6 +255,13 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
             <h2 className={`text-4xl sm:text-5xl font-serif tracking-wide ${textMain}`}>
               Play &amp; Wagers <span className="text-rose-400 font-light italic text-3xl ml-2">{yearNumber ? `Vol. ${yearNumber}` : '🎮'}</span>
             </h2>
+            {/* Maintenance Notice Banner */}
+            <div className={`mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-serif ${
+              isDark ? 'bg-amber-900/30 text-amber-300 border border-amber-700/30' : 'bg-amber-100/60 text-amber-800 border border-amber-200/50'
+            }`}>
+              <Construction className="w-3.5 h-3.5" />
+              <span>Games currently under maintenance — we're making them even better!</span>
+            </div>
           </div>
         </div>
 
@@ -218,13 +303,40 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
               return (
                 <motion.div 
                   key={game.id} 
-                  whileHover={{ scale: 1.02, y: -4 }} 
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setActiveGame(game.id)}
-                  className={`p-8 sm:p-10 rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.2)] cursor-pointer transition-all border group relative overflow-hidden ${cardBg}`}
+                  whileHover={{ scale: game.underMaintenance ? 1 : 1.02, y: game.underMaintenance ? 0 : -4 }} 
+                  whileTap={{ scale: game.underMaintenance ? 1 : 0.98 }}
+                  onClick={() => {
+                    if (!game.underMaintenance) {
+                      setActiveGame(game.id);
+                    } else {
+                      toast('🚧 This game is under maintenance!', {
+                        icon: '🛠️',
+                        duration: 3000,
+                      });
+                    }
+                  }}
+                  className={`p-8 sm:p-10 rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all border group relative overflow-hidden ${
+                    game.underMaintenance 
+                      ? `${cardBg} opacity-60 cursor-not-allowed`
+                      : `${cardBg} cursor-pointer`
+                  }`}
                 >
+                  {/* Maintenance Badge */}
+                  {game.underMaintenance && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <span className={`text-[10px] px-3 py-1.5 rounded-full flex items-center gap-1.5 ${
+                        isDark ? 'bg-amber-900/60 text-amber-300 border border-amber-700/30' : 'bg-amber-100/80 text-amber-800 border border-amber-200/50'
+                      }`}>
+                        <Construction className="w-3 h-3" />
+                        Maintenance
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-start justify-between mb-8 relative z-10">
-                    <div className={`p-4 rounded-full bg-transparent border-2 border-rose-200 dark:border-rose-900/60 transform group-hover:rotate-12 transition-transform duration-500`}>
+                    <div className={`p-4 rounded-full bg-transparent border-2 border-rose-200 dark:border-rose-900/60 transform group-hover:rotate-12 transition-transform duration-500 ${
+                      game.underMaintenance ? 'opacity-50' : ''
+                    }`}>
                       <Icon className={`w-7 h-7 ${isDark ? 'text-rose-400' : 'text-rose-600'}`} />
                     </div>
                     
@@ -240,37 +352,48 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
                     )}
                   </div>
                   
-                  <h3 className={`text-3xl font-serif mb-3 tracking-wide ${textMain}`}>{game.name}</h3>
-                  <p className={`text-sm leading-relaxed mb-8 font-serif italic ${textSub}`}>{game.description}</p>
+                  <h3 className={`text-3xl font-serif mb-3 tracking-wide ${textMain} ${game.underMaintenance ? 'opacity-50' : ''}`}>{game.name}</h3>
+                  <p className={`text-sm leading-relaxed mb-8 font-serif italic ${textSub} ${game.underMaintenance ? 'opacity-50' : ''}`}>{game.description}</p>
                   
-                  <div className={`inline-flex items-center gap-3 text-2.75 font-serif uppercase tracking-[0.2em] transition-colors ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>
-                    Play Now <span className="text-lg leading-none transform group-hover:translate-x-2 transition-transform">→</span>
+                  <div className={`inline-flex items-center gap-3 text-2.75 font-serif uppercase tracking-[0.2em] transition-colors ${
+                    game.underMaintenance 
+                      ? isDark ? 'text-stone-500' : 'text-stone-400'
+                      : isDark ? 'text-rose-400' : 'text-rose-600'
+                  }`}>
+                    {game.underMaintenance ? 'Coming Soon' : 'Play Now'}
+                    {!game.underMaintenance && <span className="text-lg leading-none transform group-hover:translate-x-2 transition-transform">→</span>}
                   </div>
                 </motion.div>
               );
             })}
           </motion.div>
         ) : activeGame === 'tictactoe' ? (
-          <TicTacToeGame
-            key="tictactoe"
-            onBack={() => setActiveGame('menu')}
-            onWin={(winner) => recordWinMutation.mutate({ gameName: 'tictactoe', winner })}
-            currentScore={leaderboard?.games?.find((g) => g.game_name === 'tictactoe')}
-            onReset={() => handleResetScore('tictactoe')}
-            theme={theme}
-            displayName={displayName}
-            partnerName={partnerName}
-          />
-        ) : activeGame === 'memorymatch' ? (
-          <motion.div key="memorymatch" className="relative z-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <MemoryMatchGame
-              yearId={yearId}
+          <div className="relative">
+            <GameMaintenanceOverlay isDark={isDark} gameName="Tic Tac Toe" />
+            <TicTacToeGame
+              key="tictactoe"
               onBack={() => setActiveGame('menu')}
-              onWin={(winner) => recordWinMutation.mutate({ gameName: 'memorymatch', winner })}
-              currentScore={leaderboard?.games?.find((g) => g.game_name === 'memorymatch')}
-              onReset={() => handleResetScore('memorymatch')}
+              onWin={(winner) => recordWinMutation.mutate({ gameName: 'tictactoe', winner })}
+              currentScore={leaderboard?.games?.find((g) => g.game_name === 'tictactoe')}
+              onReset={() => handleResetScore('tictactoe')}
+              theme={theme}
+              displayName={displayName}
+              partnerName={partnerName}
             />
-          </motion.div>
+          </div>
+        ) : activeGame === 'memorymatch' ? (
+          <div className="relative">
+            <GameMaintenanceOverlay isDark={isDark} gameName="Memory Match" />
+            <motion.div key="memorymatch" className="relative z-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <MemoryMatchGame
+                yearId={yearId}
+                onBack={() => setActiveGame('menu')}
+                onWin={(winner) => recordWinMutation.mutate({ gameName: 'memorymatch', winner })}
+                currentScore={leaderboard?.games?.find((g) => g.game_name === 'memorymatch')}
+                onReset={() => handleResetScore('memorymatch')}
+              />
+            </motion.div>
+          </div>
         ) : null}
       </AnimatePresence>
 
@@ -351,9 +474,9 @@ const TicTacToeGame: React.FC<TicTacToeProps> = ({ onBack, onWin, currentScore, 
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }} 
-      animate={{ opacity: 1, scale: 1 }} 
+      animate={{ opacity: 0.3, scale: 0.98 }} 
       exit={{ opacity: 0, scale: 0.98 }}
-      className="relative z-10 rounded-sm p-6 sm:p-12 w-full"
+      className="relative z-10 rounded-sm p-6 sm:p-12 w-full pointer-events-none blur-[2px]"
     >
       <div className="flex items-center justify-between mb-12 flex-wrap gap-6">
         <button 

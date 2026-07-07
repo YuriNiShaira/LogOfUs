@@ -1,42 +1,17 @@
-// src/pages/WatchlistPlaylistPage.tsx
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Star,
   Music,
-  Film,
-  Tv,
   Heart,
-  X,
+  Construction,
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import RomanticBackground from '../components/RomanticBackground';
 import Navbar from '../components/Navbar';
 import PlaylistSection from '../components/PlaylistSection';
-import toast from 'react-hot-toast';
-
-interface AnimeRating {
-  id: number;
-  title: string;
-  media_type: 'anime' | 'movie' | 'show';
-  my_ratings: Record<string, number>;
-  shaira_ratings: Record<string, number>;
-  my_overall: number;
-  shaira_overall: number;
-  combined_overall: number;
-  genre: string;
-  watched_together: boolean;
-  my_favorite_character: string;
-  shaira_favorite_character: string;
-  favorite_moment: string;
-  notes: string;
-  watched_date: string;
-  created_at: string;
-}
+import AnimeRatingSection from '../components/AnimeRatingSection';
 
 type TabType = 'watchlist' | 'playlist';
 
@@ -55,79 +30,77 @@ const FloatingHearts: React.FC = () => (
   </div>
 );
 
+// Maintenance Notice Component
+const MaintenanceNotice: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="flex flex-col items-center justify-center py-16 px-4 text-center"
+  >
+    <div className={`relative p-8 rounded-2xl max-w-md w-full ${
+      isDarkMode ? 'bg-stone-800/60' : 'bg-white/60'
+    } backdrop-blur-sm border ${
+      isDarkMode ? 'border-amber-700/30' : 'border-amber-200/50'
+    }`}>
+      {/* Construction Icon with Animation */}
+      <motion.div
+        animate={{ 
+          rotate: [0, -5, 5, -5, 0],
+          scale: [1, 1.05, 1, 1.05, 1]
+        }}
+        transition={{ duration: 3, repeat: Infinity }}
+        className="flex justify-center mb-4"
+      >
+        <div className={`p-4 rounded-full ${
+          isDarkMode ? 'bg-amber-900/30' : 'bg-amber-100/50'
+        }`}>
+          <Construction className="w-12 h-12 text-amber-500" />
+        </div>
+      </motion.div>
+
+      <h2 className={`text-2xl font-serif font-bold mb-3 ${
+        isDarkMode ? 'text-amber-200' : 'text-amber-800'
+      }`}>
+        Under Maintenance 🔧
+      </h2>
+      
+      <p className={`font-serif text-base mb-4 ${
+        isDarkMode ? 'text-stone-300' : 'text-stone-600'
+      }`}>
+        We're working on making your watchlist experience even better!
+      </p>
+      
+      <div className={`h-px w-20 mx-auto my-4 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent`} />
+      
+      <p className={`text-sm font-serif italic ${
+        isDarkMode ? 'text-stone-400' : 'text-stone-500'
+      }`}>
+        ✨ Meanwhile, check out the playlist section!
+      </p>
+
+      {/* Decorative dots */}
+      <div className="flex justify-center gap-2 mt-4">
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            animate={{ scale: [1, 1.3, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
+            className={`w-2 h-2 rounded-full ${
+              isDarkMode ? 'bg-amber-500/40' : 'bg-amber-400/40'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  </motion.div>
+);
+
 const WatchlistPlaylistPage: React.FC = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('watchlist');
 
-  // ✅ Fix: Ensure we always get an array
-  const { data: animeRatings, isLoading: animeLoading } = useQuery<AnimeRating[]>({
-    queryKey: ['anime-ratings'],
-    queryFn: async () => {
-      const response = await api.get('/anime-ratings/');
-      // ✅ Ensure we always return an array
-      if (Array.isArray(response.data)) {
-        return response.data;
-      } else if (response.data && typeof response.data === 'object') {
-        // If it's an object with results property (paginated response)
-        if (Array.isArray(response.data.results)) {
-          return response.data.results;
-        }
-        // If it's a single object, wrap it in an array
-        if (response.data.id) {
-          return [response.data];
-        }
-      }
-      // Fallback to empty array
-      return [];
-    },
-  });
-
-  // ✅ Ensure animeRatings is always an array for rendering
-  const ratings = Array.isArray(animeRatings) ? animeRatings : [];
-
-  // Delete anime mutation
-  const deleteAnimeMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await api.delete(`/anime-ratings/${id}/`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['anime-ratings'] });
-      toast.success('Removed from watchlist');
-    },
-    onError: () => {
-      toast.error('Failed to remove');
-    },
-  });
-
   const isDarkMode = theme === 'dark';
-
-  const getMediaIcon = (type: string) => {
-    switch (type) {
-      case 'anime':
-        return <Tv className="w-4 h-4" />;
-      case 'movie':
-        return <Film className="w-4 h-4" />;
-      case 'show':
-        return <Tv className="w-4 h-4" />;
-      default:
-        return <Star className="w-4 h-4" />;
-    }
-  };
-
-  const getMediaTypeLabel = (type: string) => {
-    switch (type) {
-      case 'anime':
-        return 'Anime';
-      case 'movie':
-        return 'Movie';
-      case 'show':
-        return 'TV Show';
-      default:
-        return type;
-    }
-  };
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -140,7 +113,7 @@ const WatchlistPlaylistPage: React.FC = () => {
       <RomanticBackground />
       <Navbar />
 
-      <div className="max-w-6xl mx-auto relative z-10 px-4 sm:px-6 py-6 pb-24">
+      <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 py-6 pb-24">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -201,6 +174,13 @@ const WatchlistPlaylistPage: React.FC = () => {
                 >
                   <Icon className="w-4 h-4" />
                   <span>{tab.label}</span>
+                  {tab.id === 'watchlist' && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                      isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      🚧
+                    </span>
+                  )}
                 </motion.button>
               );
             })}
@@ -215,114 +195,15 @@ const WatchlistPlaylistPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
             >
-              {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-stone-800/50 border border-stone-700' : 'bg-white/60 border border-rose-100'}`}>
-                  <p className="text-2xl font-serif font-bold text-rose-500">{ratings.length}</p>
-                  <p className={`text-sm font-serif italic ${isDarkMode ? 'text-stone-400' : 'text-gray-500'}`}>Total Items</p>
-                </div>
-                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-stone-800/50 border border-stone-700' : 'bg-white/60 border border-rose-100'}`}>
-                  <p className="text-2xl font-serif font-bold text-rose-500">
-                    {ratings.filter(a => a.watched_together).length}
-                  </p>
-                  <p className={`text-sm font-serif italic ${isDarkMode ? 'text-stone-400' : 'text-gray-500'}`}>Watched Together 💕</p>
-                </div>
-                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-stone-800/50 border border-stone-700' : 'bg-white/60 border border-rose-100'}`}>
-                  <p className="text-2xl font-serif font-bold text-rose-500">
-                    {ratings.reduce((sum, a) => sum + (a.combined_overall || 0), 0)}
-                  </p>
-                  <p className={`text-sm font-serif italic ${isDarkMode ? 'text-stone-400' : 'text-gray-500'}`}>Total Stars</p>
-                </div>
-                <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-stone-800/50 border border-stone-700' : 'bg-white/60 border border-rose-100'}`}>
-                  <p className="text-2xl font-serif font-bold text-rose-500">
-                    {ratings.filter(a => (a.combined_overall || 0) >= 4).length}
-                  </p>
-                  <p className={`text-sm font-serif italic ${isDarkMode ? 'text-stone-400' : 'text-gray-500'}`}>Top Rated ⭐</p>
-                </div>
-              </div>
-
-              {/* Watchlist Grid */}
-              {animeLoading ? (
-                <div className="flex justify-center py-12">
-                  <div className="w-8 h-8 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : ratings.length === 0 ? (
-                <div className={`text-center py-16 border-2 border-dashed rounded-xl ${isDarkMode ? 'border-stone-700' : 'border-rose-200'}`}>
-                  <Star className="w-12 h-12 mx-auto mb-4 text-rose-300/50" />
-                  <p className={`font-serif italic ${isDarkMode ? 'text-stone-400' : 'text-rose-400/70'}`}>
-                    No watchlist items yet. Start adding your favorite shows! 🎬
-                  </p>
-                  <button
-                    onClick={() => navigate('/year/1')}
-                    className="mt-4 px-4 py-2 bg-rose-500 text-white rounded-lg font-serif text-sm hover:bg-rose-600 transition-colors"
-                  >
-                    Add from Year Page
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {ratings.map((anime) => (
-                    <motion.div
-                      key={anime.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      whileHover={{ y: -4 }}
-                      className={`p-6 rounded-xl border ${isDarkMode ? 'bg-stone-800/40 border-stone-700' : 'bg-white/60 border-rose-100'} shadow-sm hover:shadow-md transition-all relative group`}
-                    >
-                      {/* Delete button */}
-                      <button
-                        onClick={() => deleteAnimeMutation.mutate(anime.id)}
-                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-rose-400 hover:text-rose-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <span className={`p-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20`}>
-                            {getMediaIcon(anime.media_type)}
-                          </span>
-                          <div>
-                            <h4 className="font-serif font-bold text-gray-800 dark:text-stone-200">
-                              {anime.title}
-                            </h4>
-                            <span className="text-xs text-gray-500 dark:text-stone-400">
-                              {getMediaTypeLabel(anime.media_type)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {anime.genre && (
-                        <p className={`text-sm font-serif italic ${isDarkMode ? 'text-stone-400' : 'text-gray-500'} mb-2`}>
-                          {anime.genre}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-4 mt-3">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                          <span className="font-serif font-bold">{anime.combined_overall || 0}</span>
-                        </div>
-                        {anime.watched_together && (
-                          <span className="flex items-center gap-1 text-xs px-2 py-1 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-full">
-                            <Heart className="w-3 h-3 fill-current" />
-                            Together
-                          </span>
-                        )}
-                      </div>
-
-                      {anime.my_favorite_character && (
-                        <p className={`text-xs font-serif italic mt-2 ${isDarkMode ? 'text-stone-400' : 'text-gray-500'}`}>
-                          ❤️ {anime.my_favorite_character}
-                        </p>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+              {/* Maintenance Notice - replacing the actual content */}
+              <MaintenanceNotice isDarkMode={isDarkMode} />
+              
+              {/* Original AnimeRatingSection is commented out but kept for when maintenance is done */}
+              {/* <AnimeRatingSection 
+                yearId={0} 
+                yearNumber={0} 
+              /> */}
             </motion.div>
           )}
 
