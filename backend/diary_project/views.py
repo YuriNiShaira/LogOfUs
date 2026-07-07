@@ -275,7 +275,7 @@ class LoveLetterViewSet(CoupleFilteredViewSet):
                 title=f"My Dearest {display_name} 💕",
                 content=f"""My love,
 
-Every day with you feels like a beautiful dream come true. From the moment we met on {anniversary_date}, my life has been filled with more joy, laughter, and love than I ever thought possible.
+Every day with you feels like a beautiful dream come true. From the moment we met, my life has been filled with more joy, laughter, and love than I ever thought possible.
 
 You are my sunshine on cloudy days, my comfort in difficult times, and my favorite person to share every moment with. Your smile lights up my world, and your love makes me a better person.
 
