@@ -4,13 +4,15 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from .models import Couple
+from .models import Couple, UserProfile  
 from .serializers import (
     RegisterSerializer,
     JoinCoupleSerializer,
     LoginSerializer,
     CoupleSerializer
 )
+
+from utils.upload import upload_to_supabase
 
 
 def get_tokens_for_user(user):
@@ -114,7 +116,7 @@ def join_couple(request):
     partner_name = other_member.display_name if other_member else 'Your Partner'
     
     return Response({
-        'message': f'Successfully joined {couple.name}! 💕',
+        'message': f'Successfully joined {couple.name}!',
         'username': user.username,
         'display_name': user.profile.display_name,
         'couple_name': couple.name,
@@ -138,7 +140,7 @@ def logout_view(request):
     except Exception:
         pass
     
-    return Response({'message': 'See you soon! 💕'})
+    return Response({'message': 'See you soon!'})
 
 
 @api_view(['POST'])
@@ -213,7 +215,7 @@ def contact(request):
     except Exception:
         pass
     
-    return Response({'success': True,'message': f'Thanks {name}! Your message has been saved. We\'ll get back to you soon! 💕'})
+    return Response({'success': True,'message': f'Thanks {name}! Your message has been saved. We\'ll get back to you soon!'})
 
 
 
@@ -228,6 +230,7 @@ def user_profile(request):
             'id': profile.id,
             'username': request.user.username,
             'display_name': profile.display_name,
+            'profile_picture': profile.profile_picture,  # ✅ ADD THIS
             'couple': {
                 'id': profile.couple.id,
                 'name': profile.couple.name,
@@ -239,6 +242,7 @@ def user_profile(request):
             } if profile.couple else None
         })
     
+    # PATCH - Update profile
     display_name = request.data.get('display_name')
     if display_name:
         profile.display_name = display_name
@@ -248,12 +252,14 @@ def user_profile(request):
         'id': profile.id,
         'username': request.user.username,
         'display_name': profile.display_name,
+        'profile_picture': profile.profile_picture,  # ✅ ADD THIS
         'couple': {
             'id': profile.couple.id,
             'name': profile.couple.name,
             'anniversary_date': profile.couple.anniversary_date,
         } if profile.couple else None
     })
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -309,3 +315,26 @@ def update_couple(request):
         'partner1_name': couple.members.first().display_name if couple.members.first() else None,
         'partner2_name': couple.members.last().display_name if couple.members.count() > 1 else None,
     })
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def upload_profile_picture(request):
+    """Upload profile picture for the current user"""
+    profile = request.user.profile
+    image_file = request.FILES.get('profile_picture')
+    
+    if not image_file:
+        return Response({'error': 'No image provided'}, status=400)
+    
+    image_url = upload_to_supabase(image_file, folder='profile_pictures')
+    
+    if image_url:
+        profile.profile_picture = image_url
+        profile.save()
+        return Response({
+            'profile_picture': image_url,
+            'message': 'Profile picture updated successfully!'
+        })
+    
+    return Response({'error': 'Failed to upload image'}, status=500)
