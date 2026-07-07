@@ -511,48 +511,56 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
         if not couple:
             raise drf_serializers.ValidationError({'detail': 'Unable to determine your couple.'})
 
+        # Handle year - allow null since null=True, blank=True
+        year_obj = None
         if year_id:
             try:
-                Year.objects.get(id=year_id, couple=couple)
+                year_obj = Year.objects.get(id=year_id, couple=couple)
             except Year.DoesNotExist:
                 raise drf_serializers.ValidationError({'year': 'The selected year is not valid for your relationship.'})
-        else:
-            year_id = None
 
+        # Handle rating - convert 0 to None
         rating = self.request.data.get('rating')
-        if rating == 0:
+        if rating == 0 or rating is None:
             serializer.validated_data['rating'] = None
 
+        # Save with creator (not recommended_by)
         serializer.save(
             couple=couple,
-            year_id=year_id,
-            creator=user_profile  
+            year=year_obj,
+            creator=user_profile
         )
 
     def perform_update(self, serializer):
         couple = get_couple(self.request)
         year_id = self.request.data.get('year')
+        user_profile = self.request.user.profile
 
         if not couple:
             raise drf_serializers.ValidationError({'detail': 'Unable to determine your couple.'})
 
+        year_obj = None
         if year_id:
             try:
-                Year.objects.get(id=year_id, couple=couple)
+                year_obj = Year.objects.get(id=year_id, couple=couple)
             except Year.DoesNotExist:
                 raise drf_serializers.ValidationError({'year': 'The selected year is not valid for your relationship.'})
 
         rating = self.request.data.get('rating')
-        if rating == 0:
+        if rating == 0 or rating is None:
             serializer.validated_data['rating'] = None
 
-        serializer.save()
+        serializer.save(year=year_obj)
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        
         year_id = self.request.query_params.get('year', None)
         if year_id:
-            queryset = queryset.filter(year_id=year_id)
+            try:
+                queryset = queryset.filter(year_id=int(year_id))
+            except (TypeError, ValueError):
+                pass
 
         creator = self.request.query_params.get('creator', None)
         if creator:
@@ -560,7 +568,7 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
 
         is_listened = self.request.query_params.get('is_listened', None)
         if is_listened is not None:
-            queryset = queryset.filter(is_listened=is_listened == 'true')
+            queryset = queryset.filter(is_listened=is_listened.lower() == 'true')
 
         return queryset
     
@@ -573,6 +581,7 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
                 'listened_count': 0,
                 'my_recommendations': 0,
                 'shaira_recommendations': 0,
+                'average_rating': 0,
             })
         
         year_id = request.query_params.get('year_id')
@@ -581,7 +590,7 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
         if year_id:
             try:
                 queryset = queryset.filter(year_id=year_id)
-            except:
+            except (TypeError, ValueError):
                 pass
 
         members = list(couple.members.all())
@@ -595,12 +604,14 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
         if no_creator_count > 0:
             my_count += no_creator_count
 
+        avg_rating = queryset.filter(rating__gt=0).aggregate(avg=Avg('rating'))['avg'] or 0
+
         return Response({
             'total_songs': queryset.count(),
             'listened_count': queryset.filter(is_listened=True).count(),
             'my_recommendations': my_count,
             'shaira_recommendations': partner_count,
-            'average_rating': queryset.filter(rating__gt=0).aggregate(avg=Avg('rating'))['avg'] or 0,
+            'average_rating': round(avg_rating, 1),
         })
 
 

@@ -89,10 +89,26 @@ class SongRecommendationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SongRecommendation
-        fields = '__all__'
+        fields = [
+            'id', 
+            'title', 
+            'artist', 
+            'creator',
+            'creator_display',
+            'youtube_link', 
+            'spotify_link', 
+            'is_listened', 
+            'rating', 
+            'mood', 
+            'mood_display', 
+            'created_at', 
+            'year',
+            'couple'
+        ]
         read_only_fields = ['couple', 'creator']
         extra_kwargs = {
-            'year': {'required': False, 'allow_null': True}
+            'year': {'required': False, 'allow_null': True},
+            'rating': {'required': False, 'allow_null': True},
         }
 
     def get_creator_display(self, obj):
