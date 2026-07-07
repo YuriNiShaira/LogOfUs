@@ -35,7 +35,7 @@ const Navbar: React.FC = () => {
     { icon: Home, label: 'Home', path: '/dashboard' },
     { icon: ListChecks, label: 'Bucket List', path: '/bucketlist' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
-    { icon: Star, label: 'Watchlist', path: '/watchlist-playlist' },
+    { icon: Star, label: 'Playlist', path: '/watchlist-playlist' },
     { icon: Gamepad2, label: 'Games', path: '/games' },
   ];
 
