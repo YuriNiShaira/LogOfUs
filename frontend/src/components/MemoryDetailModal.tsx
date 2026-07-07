@@ -39,7 +39,7 @@ const leftVariants = {
     rotateY: dir === 1 ? 90 : 0,
     zIndex: dir === 1 ? 20 : 0,
     filter: dir === 1 ? "brightness(0.6)" : "brightness(1)",
-    opacity: 1, 
+    opacity: 1,
   }),
   center: (dir: number) => ({
     rotateY: 0,
@@ -119,8 +119,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const [isFlipping, setIsFlipping] = useState(false);
   const [direction, setDirection] = useState(0);
 
-  // FIX: Sychronous state reset kapag nagbago yung mismong memory object
-  // Bago pa man mag-draw sa screen, alam na ng React na babalik sa Page 0 ang panibagong kwento.
+  // Reset spread when memory changes
   if (memory && memory.id !== prevMemoryId) {
     setPrevMemoryId(memory.id);
     setCurrentSpread(0);
@@ -145,7 +144,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
           pages.push(currentPageText.trim());
         }
         currentPageText = word;
-        isFirstPage = false; 
+        isFirstPage = false;
       }
     }
     
@@ -172,7 +171,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const canGoNext = hasNextSpread || hasNextMemory || hasNextDate;
   const canGoPrev = hasPrevSpread || hasPrevMemory || hasPrevDate;
 
-  // Nilinis na useEffect dahil hawak na ng render check sa taas ang tracking ng memory.id
   useEffect(() => {
     if (!isOpen) {
       setPrevMemoryId(null);
@@ -191,7 +189,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
       } else if ((hasNextMemory || hasNextDate) && onNext) {
         setIsFlipping(true);
         setDirection(1);
-        onNext(); // Hayaan nating mag-update ang prop nang kusa nang walang glitchy state resets dito
+        onNext();
         setTimeout(() => setIsFlipping(false), 900);
       }
       return;
@@ -315,7 +313,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
               <div className="mb-4 flex justify-between items-start shrink-0">
                 <div>
                   {onEdit && (
-                    <button onClick={() => onEdit(memory)} className="text-xs font-serif italic text-gray-400 hover:text-[#8C2332] transition-colors underline underline-offset-4"> 
+                    <button onClick={() => onEdit(memory)} className="text-xs font-serif italic text-gray-400 hover:text-[#8C2332] transition-colors underline underline-offset-4">
                       Edit Entry
                     </button>
                   )}
