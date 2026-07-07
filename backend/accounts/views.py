@@ -230,7 +230,8 @@ def user_profile(request):
             'id': profile.id,
             'username': request.user.username,
             'display_name': profile.display_name,
-            'profile_picture': profile.profile_picture,  # ✅ ADD THIS
+            'profile_picture': profile.profile_picture,
+            'hover_profile_picture': profile.hover_profile_picture,
             'couple': {
                 'id': profile.couple.id,
                 'name': profile.couple.name,
@@ -242,7 +243,6 @@ def user_profile(request):
             } if profile.couple else None
         })
     
-    # PATCH - Update profile
     display_name = request.data.get('display_name')
     if display_name:
         profile.display_name = display_name
@@ -252,7 +252,8 @@ def user_profile(request):
         'id': profile.id,
         'username': request.user.username,
         'display_name': profile.display_name,
-        'profile_picture': profile.profile_picture,  # ✅ ADD THIS
+        'profile_picture': profile.profile_picture,
+        'hover_profile_picture': profile.hover_profile_picture, 
         'couple': {
             'id': profile.couple.id,
             'name': profile.couple.name,
@@ -335,6 +336,30 @@ def upload_profile_picture(request):
         return Response({
             'profile_picture': image_url,
             'message': 'Profile picture updated successfully!'
+        })
+    
+    return Response({'error': 'Failed to upload image'}, status=500)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def upload_hover_profile_picture(request):
+    """Upload hover profile picture for the current user"""
+    profile = request.user.profile
+    image_file = request.FILES.get('hover_profile_picture')
+    
+    if not image_file:
+        return Response({'error': 'No image provided'}, status=400)
+    
+    # Upload to Supabase
+    image_url = upload_to_supabase(image_file, folder='profile_pictures/hover')
+    
+    if image_url:
+        profile.hover_profile_picture = image_url
+        profile.save()
+        return Response({
+            'hover_profile_picture': image_url,
+            'message': 'Hover profile picture updated successfully!'
         })
     
     return Response({'error': 'Failed to upload image'}, status=500)
