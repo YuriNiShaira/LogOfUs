@@ -14,7 +14,6 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
 import RomanticBackground from '../components/RomanticBackground';
 import Navbar from '../components/Navbar';
 import PlaylistSection from '../components/PlaylistSection';

@@ -74,7 +74,7 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
   const queryClient = useQueryClient();
 
   // Query for songs - FIXED: Don't include filterListened in queryKey to avoid issues
-  const { data: songs, isLoading, error: songsError } = useQuery<SongRecommendation[]>({
+  const { data: songs, isLoading, } = useQuery<SongRecommendation[]>({
     queryKey: ['songRecommendations', yearId || 'all'],
     queryFn: async () => {
       try {
