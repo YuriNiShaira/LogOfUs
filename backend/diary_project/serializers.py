@@ -84,24 +84,24 @@ class QuizScoreSerializer(serializers.ModelSerializer):
         return obj.answered_questions.count()
     
 class SongRecommendationSerializer(serializers.ModelSerializer):
-    recommended_by_display = serializers.SerializerMethodField()
-    recommended_to_display = serializers.SerializerMethodField()
+    creator_display = serializers.SerializerMethodField()
     mood_display = serializers.SerializerMethodField()
 
     class Meta:
         model = SongRecommendation
         fields = '__all__'
-        read_only_fields = ['couple']
+        read_only_fields = ['couple', 'creator']
+        extra_kwargs = {
+            'year': {'required': False, 'allow_null': True}
+        }
 
-    def get_recommended_by_display(self, obj):
-        return obj.get_recommended_by_display()
-
-    def get_recommended_to_display(self, obj):
-        return obj.get_recommended_to_display()
+    def get_creator_display(self, obj):
+        if obj.creator:
+            return obj.creator.display_name
+        return 'Unknown'
 
     def get_mood_display(self, obj):
         return obj.get_mood_display() if obj.mood else ''
-    
 
 class BucketListItemSerializer(serializers.ModelSerializer):
     category_display = serializers.SerializerMethodField()

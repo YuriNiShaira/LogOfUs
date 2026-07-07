@@ -95,16 +95,13 @@ class YearViewSet(CoupleFilteredViewSet):
         couple = get_couple(self.request)
         year_number = serializer.validated_data.get('year_number')
 
-        # Allow 0 (prequel) and positive numbers
         if year_number is not None and year_number < 0:
             raise drf_serializers.ValidationError({'year_number': 'Year number cannot be negative.'})
 
-        # Check for duplicate year numbers (including prequel)
         if Year.objects.filter(couple=couple, year_number=year_number).exists():
             label = "Prequel" if year_number == 0 else f"Year {year_number}"
             raise drf_serializers.ValidationError({'year_number': f'{label} already exists for your relationship.'})
 
-        # Upload cover image if provided
         image_file = self.request.FILES.get('cover_image')
         image_url = None
         if image_file:
@@ -115,13 +112,10 @@ class YearViewSet(CoupleFilteredViewSet):
             year.cover_image = image_url
             year.save(update_fields=['cover_image'])
 
-
     def update(self, request, *args, **kwargs):
-        """Update year (including cover image)"""
         year = self.get_object()
         couple = get_couple(request)
         
-        # Check if year_number is being changed and validate
         new_year_number = request.data.get('year_number')
         if new_year_number is not None:
             new_year_number = int(new_year_number)
@@ -131,7 +125,6 @@ class YearViewSet(CoupleFilteredViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Check for duplicate year numbers (excluding current year)
             if Year.objects.filter(couple=couple, year_number=new_year_number).exclude(id=year.id).exists():
                 label = "Prequel" if new_year_number == 0 else f"Year {new_year_number}"
                 return Response(
@@ -139,7 +132,6 @@ class YearViewSet(CoupleFilteredViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
-        # Handle cover image upload
         image_file = request.FILES.get('cover_image')
         if image_file:
             image_url = upload_to_supabase(image_file, folder='year_covers')
@@ -175,13 +167,11 @@ class MemoryViewSet(CoupleFilteredViewSet):
         memory_date = serializer.validated_data.get('date')
         image_file = self.request.FILES.get('image')
 
-        # Prevent future dates
         if memory_date and memory_date > timezone.now().date():
             raise drf_serializers.ValidationError({
-                'date': 'You cannot create a memory in the future! 📅'
+                'date': 'You cannot create a memory in the future!'
             })
 
-        # Validate that the date belongs to the selected relationship year
         if year_id and memory_date:
             try:
                 year_obj = Year.objects.get(id=year_id, couple=couple)
@@ -193,7 +183,6 @@ class MemoryViewSet(CoupleFilteredViewSet):
             except Year.DoesNotExist:
                 pass
 
-        # Upload to Supabase
         image_url = None
         if image_file:
             image_url = upload_to_supabase(image_file)
@@ -206,37 +195,28 @@ class MemoryViewSet(CoupleFilteredViewSet):
             memory.save(update_fields=['image'])
 
     def update(self, request, *args, **kwargs):
-        """Update memory with proper image handling"""
         memory = self.get_object()
         couple = get_couple(request)
         
-        # Handle image deletion
         delete_image = request.data.get('delete_image') == 'true'
-        
-        # Handle new image upload
         image_file = request.FILES.get('image')
         
         if delete_image:
             memory.image = None
             memory.save(update_fields=['image'])
-        
-        # If new image is uploaded, upload it
         elif image_file:
             image_url = upload_to_supabase(image_file)
             if image_url:
                 memory.image = image_url
                 memory.save(update_fields=['image'])
         
-        # Update other fields
         serializer = self.get_serializer(memory, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         
-        # Prevent future dates
         memory_date = serializer.validated_data.get('date')
         if memory_date and memory_date > timezone.now().date():
-            raise drf_serializers.ValidationError({'date': 'You cannot set a memory in the future! 📅'})
+            raise drf_serializers.ValidationError({'date': 'You cannot set a memory in the future!'})
         
-        # Validate date belongs to the year
         year_id = request.data.get('year') or memory.year_id
         if year_id and memory_date:
             try:
@@ -252,8 +232,8 @@ class MemoryViewSet(CoupleFilteredViewSet):
         return Response(serializer.data)
 
     def perform_update(self, serializer):
-        """Save the updated memory"""
         serializer.save()
+
 
 class LoveLetterViewSet(CoupleFilteredViewSet):
     queryset = LoveLetter.objects.filter(is_active=True)
@@ -272,7 +252,7 @@ class LoveLetterViewSet(CoupleFilteredViewSet):
             
             LoveLetter.objects.create(
                 couple=couple,
-                title=f"My Dearest {display_name} 💕",
+                title=f"My Dearest {display_name}",
                 content=f"""My love,
 
 Every day with you feels like a beautiful dream come true. From the moment we met, my life has been filled with more joy, laughter, and love than I ever thought possible.
@@ -284,7 +264,7 @@ This diary is my gift to you - a collection of our beautiful memories together. 
 I can't wait to create many more memories with you, my love. Here's to our past, our present, and our beautiful future together.
 
 Forever yours,
-Your Love 💕""",
+Your Love""",
                 is_active=True
             )
             queryset = LoveLetter.objects.filter(couple=couple)
@@ -518,26 +498,36 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
     queryset = SongRecommendation.objects.all()
     serializer_class = SongRecommendationSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def perform_create(self, serializer):
         couple = get_couple(self.request)
         year_id = self.request.data.get('year')
+        user_profile = self.request.user.profile
 
         if not couple:
             raise drf_serializers.ValidationError({'detail': 'Unable to determine your couple.'})
 
-        if not year_id:
-            raise drf_serializers.ValidationError({'year': 'Year is required.'})
-
-        try:
-            Year.objects.get(id=year_id, couple=couple)
-        except Year.DoesNotExist:
-            raise drf_serializers.ValidationError({'year': 'The selected year is not valid for your relationship.'})
+        if year_id:
+            try:
+                Year.objects.get(id=year_id, couple=couple)
+            except Year.DoesNotExist:
+                raise drf_serializers.ValidationError({'year': 'The selected year is not valid for your relationship.'})
+        else:
+            year_id = None
 
         rating = self.request.data.get('rating')
         if rating == 0:
             serializer.validated_data['rating'] = None
 
-        serializer.save(couple=couple)
+        serializer.save(
+            couple=couple,
+            year_id=year_id,
+            creator=user_profile  
+        )
 
     def perform_update(self, serializer):
         couple = get_couple(self.request)
@@ -564,13 +554,9 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
         if year_id:
             queryset = queryset.filter(year_id=year_id)
 
-        recommended_by = self.request.query_params.get('recommended_by', None)
-        if recommended_by:
-            queryset = queryset.filter(recommended_by=recommended_by)
-
-        recommended_to = self.request.query_params.get('recommended_to', None)
-        if recommended_to:
-            queryset = queryset.filter(recommended_to=recommended_to)
+        creator = self.request.query_params.get('creator', None)
+        if creator:
+            queryset = queryset.filter(creator__display_name=creator)
 
         is_listened = self.request.query_params.get('is_listened', None)
         if is_listened is not None:
@@ -580,16 +566,40 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
     
     @action(detail=False, methods=['get'])
     def stats(self, request):
+        couple = get_couple(request)
+        if not couple:
+            return Response({
+                'total_songs': 0,
+                'listened_count': 0,
+                'my_recommendations': 0,
+                'shaira_recommendations': 0,
+            })
+        
         year_id = request.query_params.get('year_id')
-        queryset = self.get_queryset().filter(year_id=year_id)
+        queryset = self.get_queryset()
+        
+        if year_id:
+            try:
+                queryset = queryset.filter(year_id=year_id)
+            except:
+                pass
+
+        members = list(couple.members.all())
+        me = members[0] if len(members) > 0 else None
+        partner = members[1] if len(members) > 1 else None
+
+        my_count = queryset.filter(creator=me).count() if me else 0
+        partner_count = queryset.filter(creator=partner).count() if partner else 0
+        
+        no_creator_count = queryset.filter(creator__isnull=True).count()
+        if no_creator_count > 0:
+            my_count += no_creator_count
 
         return Response({
             'total_songs': queryset.count(),
             'listened_count': queryset.filter(is_listened=True).count(),
-            'my_recommendations': queryset.filter(recommended_by='me').count(),
-            'shaira_recommendations': queryset.filter(recommended_by='shaira').count(),
-            'for_me': queryset.filter(recommended_to='me').count(),
-            'for_shaira': queryset.filter(recommended_to='shaira').count(),
+            'my_recommendations': my_count,
+            'shaira_recommendations': partner_count,
             'average_rating': queryset.filter(rating__gt=0).aggregate(avg=Avg('rating'))['avg'] or 0,
         })
 
@@ -607,7 +617,7 @@ class BucketListViewSet(CoupleFilteredViewSet):
 
         return Response({
             'success': True,
-            'message': f'🎉 Bucket list item completed! "{item.title}" 🎉',
+            'message': f'Bucket list item completed! "{item.title}"',
             'item': self.get_serializer(item).data
         })
     
@@ -689,19 +699,45 @@ class PetPhotoViewSet(CoupleFilteredViewSet):
         queryset = super().get_queryset()
         year_id = self.request.query_params.get('year', None)
         if year_id:
-            queryset = queryset.filter(year_id=year_id)
+            try:
+                queryset = queryset.filter(year_id=int(year_id))
+            except (TypeError, ValueError):
+                pass
         return queryset
 
     def perform_create(self, serializer):
         couple = get_couple(self.request)
         year_id = self.request.data.get('year')
 
+        if not couple:
+            raise drf_serializers.ValidationError({'detail': 'Unable to determine your couple.'})
+
         if not year_id:
             raise drf_serializers.ValidationError({'year': 'Year is required.'})
+        
+        try:
+            year_obj = Year.objects.get(id=year_id, couple=couple)
+        except Year.DoesNotExist:
+            raise drf_serializers.ValidationError({'year': 'The selected year is not valid for your relationship.'})
         
         image_file = self.request.FILES.get('image')
         if not image_file:
             raise drf_serializers.ValidationError({'image': 'Image file is required.'})
         
         image_url = upload_to_supabase(image_file, folder='pet_photos')
-        serializer.save(couple=couple, image=image_url)
+        
+        date_taken = self.request.data.get('date_taken')
+        if date_taken:
+            try:
+                from datetime import datetime
+                date_taken_obj = datetime.strptime(date_taken, '%Y-%m-%d').date()
+                if date_taken_obj > timezone.now().date():
+                    raise drf_serializers.ValidationError({'date_taken': 'Date cannot be in the future!'})
+            except ValueError:
+                pass
+        
+        serializer.save(
+            couple=couple,
+            year=year_obj,
+            image=image_url
+        )

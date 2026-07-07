@@ -258,17 +258,28 @@ class QuizScore(models.Model):
 
 class SongRecommendation(models.Model):
     MOOD_CHOICES = [
-        ('romantic', '💕 Romantic'),
-        ('sad', '😢 Sad'),
-        ('chill', '😌 Chill'),
-        ('other', '✨ Other'),
+        ('romantic', 'Romantic'),
+        ('sad', 'Sad'),
+        ('chill', 'Chill'),
+        ('other', 'Other'),
     ]
     couple = models.ForeignKey(Couple, on_delete=models.CASCADE, related_name='song_recommendations')
-    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='song_recommendations')
+    year = models.ForeignKey(
+        Year, 
+        on_delete=models.CASCADE, 
+        related_name='song_recommendations',
+        null=True,
+        blank=True
+    )
     title = models.CharField(max_length=200)
     artist = models.CharField(max_length=200)
-    recommended_by = models.CharField(max_length=20, choices=[('me', 'Me'), ('shaira', 'Shaira')])
-    recommended_to = models.CharField(max_length=20, choices=[('me', 'Me'), ('shaira', 'Shaira')])
+    creator = models.ForeignKey(
+        'accounts.UserProfile',
+        on_delete=models.CASCADE,
+        related_name='created_songs',
+        null=True,
+        blank=True
+    )
     youtube_link = models.URLField(blank=True)
     spotify_link = models.URLField(blank=True)
     is_listened = models.BooleanField(default=False)
