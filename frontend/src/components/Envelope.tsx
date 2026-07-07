@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Sparkles, X, Stamp, Camera } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../services/api";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 import toast from 'react-hot-toast';
+import UploadPhotoModal from "./UploadPhotoModal";
 
 interface LoveLetter {
   id: number;
@@ -37,15 +38,15 @@ const floatingHearts = [
   { id: 5, left: "82%", delay: 0.05 },
 ];
 
-// MODERN FRAME with Mobile Support (Tap to Toggle, Long Press to Upload)
+// Modern Frame with Buttons - ENHANCED EMPTY STATE
 const ModernFrame: React.FC<{
   imageUrl?: string | null;
   hoverImageUrl?: string | null;
   name: string;
   side: 'left' | 'right';
   isDark: boolean;
-  onUpload?: (side: 'left' | 'right') => void;
-  onUploadHover?: (side: 'left' | 'right') => void;
+  onUpload: () => void;
+  onUploadHover: () => void;
   isUploading?: boolean;
   isUploadingHover?: boolean;
 }> = ({ 
@@ -59,97 +60,33 @@ const ModernFrame: React.FC<{
   isUploading,
   isUploadingHover 
 }) => {
-  const [imageError, setImageError] = useState(false);
   const [hoverImageError, setHoverImageError] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const [isToggled, setIsToggled] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const longPressTimer = useRef<number | null>(null);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const primaryImage = imageUrl || null;
-  const hoverImage = (hoverImageUrl && !hoverImageError) ? hoverImageUrl : primaryImage;
-
-  const getFallbackImage = (letter: string, isHover: boolean = false) => {
-    const bgColor = isHover ? '#e8e0d8' : '#f0f0f0';
-    const textColor = isHover ? '#777' : '#999';
-    return `data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect width="400" height="400" fill="${bgColor}"/%3E%3Ctext x="200" y="200" text-anchor="middle" dy=".3em" fill="${textColor}" font-family="serif" font-size="${isHover ? '40' : '60'}"%3E${isHover ? '✦' : encodeURIComponent(letter.toUpperCase())}%3C/text%3E%3C/svg%3E`;
-  };
+  const hoverImage = (hoverImageUrl && !hoverImageError) ? hoverImageUrl : null;
 
   const tilt = side === 'left' ? '-2deg' : '2deg';
-
-  const handleTap = () => {
-    if (isMobile) {
-      if (hoverImageUrl && !isUploading && !isUploadingHover) {
-        setIsToggled(!isToggled);
-        if (navigator.vibrate) navigator.vibrate(10);
-      }
-    } else {
-      onUpload?.(side);
-    }
-  };
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (onUploadHover && !isUploading && !isUploadingHover) {
-      onUploadHover(side);
-    }
-  };
-
-  const handleTouchStart = () => {
-    if (isMobile && onUploadHover && !isUploading && !isUploadingHover) {
-      longPressTimer.current = window.setTimeout(() => {
-        if (onUploadHover) {
-          onUploadHover(side);
-          if (navigator.vibrate) navigator.vibrate(50);
-          toast.success('Upload hover photo');
-        }
-        longPressTimer.current = null;
-      }, 800);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
-
-  const showHoverImage = isMobile ? isToggled : isHovering;
-
-  useEffect(() => {
-    setIsToggled(false);
-  }, [imageUrl, hoverImageUrl]);
+  const hasHoverImage = !!hoverImageUrl && hoverImageUrl.trim() !== '' && hoverImageUrl !== primaryImage;
+  const showHoverImage = isHovering && hasHoverImage;
 
   return (
     <motion.div 
-      className="flex flex-col items-center gap-3 sm:gap-4 cursor-pointer select-none group"
+      className="flex flex-col items-center gap-3 sm:gap-4 select-none"
       style={{ rotate: tilt }}
       whileHover={{ scale: 1.03, rotate: '0deg', y: -4, zIndex: 30 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
-      onClick={handleTap}
-      onContextMenu={handleContextMenu}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      title={isMobile ? "Tap to switch photo | Long press for hover photo" : "Left-click: Change main photo | Right-click: Change hover photo"}
     >
       {/* Outer Frame (Black) */}
       <div 
         className={`
-          relative p-1.5 sm:p-2 rounded-sm shadow-md group-hover:shadow-2xl transition-all duration-500
+          relative p-1.5 sm:p-2 rounded-sm shadow-md transition-all duration-500
           w-32 h-44 xs:w-36 xs:h-48 sm:w-44 sm:h-60 md:w-52 md:h-72
           bg-[#111111] border border-black
+          ${isHovering && !primaryImage ? 'shadow-xl' : 'shadow-md'}
+          ${isHovering && primaryImage ? 'shadow-2xl' : ''}
         `}
       >
         {/* Inner Matting (White) */}
@@ -157,84 +94,124 @@ const ModernFrame: React.FC<{
           {/* Edge-to-Edge Photo Container */}
           <div className="relative w-full h-full overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.15)]">
             
-            {/* Primary Image - visible by default */}
-            <img 
-              src={primaryImage || getFallbackImage(name.charAt(0), false)}
-              alt={name}
-              className={`
-                w-full h-full object-cover transition-all duration-700 ease-out pointer-events-none
-                ${showHoverImage ? 'opacity-0 scale-110' : 'opacity-100 scale-100'}
-              `}
-              onError={() => setImageError(true)}
-            />
-
-            {/* Hover/Toggle Image - fades in on hover or tap */}
-            <img 
-              src={hoverImage || getFallbackImage(name.charAt(0), true)}
-              alt={`${name} hover`}
-              className={`
-                absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out pointer-events-none
-                ${showHoverImage ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}
-              `}
-              onError={() => setHoverImageError(true)}
-            />
-
-            {/* Glass/Sheen overlay on hover/toggle */}
-            <div 
-              className={`
-                absolute inset-0 bg-linear-to-tr from-transparent via-white/10 to-transparent 
-                transition-opacity duration-700 pointer-events-none
-                ${showHoverImage ? 'opacity-100' : 'opacity-0'}
-              `}
-            />
-
-            {/* Upload Overlay */}
-            <AnimatePresence>
-              {((isHovering && !isMobile) || !imageUrl || imageError) && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex flex-col items-center justify-center z-10 transition-opacity duration-300"
-                >
-                  {isUploading ? (
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  ) : isUploadingHover ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      <span className="text-[8px] text-white/60 font-serif">Hover photo...</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Camera className="w-6 h-6 sm:w-7 sm:h-7 text-white/90 mb-1.5 drop-shadow-md" strokeWidth={1.5} />
-                      <span className="text-[10px] sm:text-xs text-white/90 font-serif tracking-widest uppercase">
-                        {imageUrl ? 'Change' : 'Add Photo'}
-                      </span>
-                      {onUploadHover && imageUrl && (
-                        <span className="text-[8px] text-white/60 font-serif mt-1">
-                          {isMobile ? 'Long press for hover' : 'Right-click for hover'}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Mobile toggle indicator */}
-            {isMobile && hoverImageUrl && (
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20">
-                <div className="bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
-                  <span className="text-[6px] text-white/60 font-serif tracking-wider">
-                    {isToggled ? '✦ hover' : 'tap'}
-                  </span>
-                </div>
-              </div>
+            {/* Primary Image - visible when exists */}
+            {primaryImage && (
+              <img 
+                src={primaryImage}
+                alt={name}
+                className={`
+                  w-full h-full object-cover transition-all duration-700 ease-out
+                  ${showHoverImage ? 'opacity-0 scale-110' : 'opacity-100 scale-100'}
+                `}
+                onError={() => {}}
+              />
             )}
 
-            {/* Hover indicator badge (desktop) */}
-            {!isMobile && hoverImageUrl && (
-              <div className="absolute top-1 right-1 z-20">
+            {/* Hover Image - fades in on hover */}
+            {hasHoverImage && primaryImage && (
+              <img 
+                src={hoverImage || ''}
+                alt={`${name} hover`}
+                className={`
+                  absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-out
+                  ${showHoverImage ? 'opacity-100 scale-105' : 'opacity-0 scale-100'}
+                `}
+                onError={() => {
+                  console.warn('Hover image failed:', hoverImage);
+                  setHoverImageError(true);
+                }}
+              />
+            )}
+
+            {/* Glass/Sheen overlay on hover (only when hover image exists) */}
+            {hasHoverImage && primaryImage && (
+              <div 
+                className={`
+                  absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent 
+                  transition-opacity duration-700 pointer-events-none
+                  ${showHoverImage ? 'opacity-100' : 'opacity-0'}
+                `}
+              />
+            )}
+
+            {/* ENHANCED: Empty state - no photo uploaded */}
+            {!primaryImage && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpload();
+                }}
+                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-10 
+                           bg-gradient-to-b from-gray-50/90 via-white/80 to-gray-100/90 backdrop-blur-sm
+                           hover:from-rose-50/90 hover:via-white/90 hover:to-rose-50/90 transition-all duration-500
+                           cursor-pointer group focus:outline-none focus:ring-2 focus:ring-rose-400/50"
+                aria-label="Upload main photo"
+              >
+                {/* Animated pulsing ring */}
+                <div className="relative mb-3">
+                  <motion.div 
+                    className="absolute inset-0 rounded-full bg-rose-400/20"
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <motion.div 
+                    className="absolute inset-0 rounded-full bg-rose-300/30"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                  />
+                  <div className="relative h-14 w-14 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-rose-200 group-hover:border-rose-400 transition-colors duration-300">
+                    <Camera className="h-6 w-6 text-rose-400 group-hover:text-rose-600 group-hover:scale-110 transition-all duration-300" strokeWidth={1.5} />
+                  </div>
+                </div>
+                
+                {/* Silhouette placeholder */}
+                <motion.div 
+                  className="mb-3 opacity-30 group-hover:opacity-40 transition-opacity duration-300"
+                  animate={{ y: [0, -3, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-gray-400 group-hover:text-rose-400 transition-colors">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 20c0-4 4-7 8-7s8 3 8 7" />
+                  </svg>
+                </motion.div>
+
+                {/* Call to action text */}
+                <div className="text-center px-2">
+                  <p className="text-xs font-serif text-rose-600/70 group-hover:text-rose-700 transition-colors font-medium tracking-wide">
+                    Add your photo
+                  </p>
+                  <p className="text-[9px] text-gray-400/60 group-hover:text-gray-500 mt-1 italic tracking-wide">
+                    Click to upload
+                  </p>
+                </div>
+
+                {/* Decorative corner elements */}
+                <div className="absolute top-2 left-2">
+                  <motion.div
+                    animate={{ opacity: [0.3, 0.6, 0.3], rotate: [0, 180, 360] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                  >
+                    <Sparkles className="h-2.5 w-2.5 text-rose-300/50" />
+                  </motion.div>
+                </div>
+                <div className="absolute bottom-2 right-2">
+                  <motion.div
+                    animate={{ opacity: [0.6, 0.3, 0.6], rotate: [360, 180, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "linear", delay: 2 }}
+                  >
+                    <Sparkles className="h-2.5 w-2.5 text-amber-300/50" />
+                  </motion.div>
+                </div>
+
+                {/* Bottom gradient fade for depth */}
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-gray-100/40 to-transparent pointer-events-none" />
+              </button>
+            )}
+
+            {/* Hover indicator badge (only when image exists) */}
+            {primaryImage && hasHoverImage && (
+              <div className="absolute top-1 right-1 z-20 pointer-events-none">
                 <div className="bg-black/40 backdrop-blur-sm rounded-full px-1.5 py-0.5">
                   <span className="text-[6px] text-white/60 font-serif tracking-wider">✦</span>
                 </div>
@@ -244,19 +221,66 @@ const ModernFrame: React.FC<{
         </div>
       </div>
 
-      {/* Name below */}
-      <div className="px-2 flex flex-col items-center">
+      {/* Name and Buttons below */}
+      <div className="flex flex-col items-center gap-2 w-full max-w-35">
         <span className={`
-          letter-title text-base sm:text-lg tracking-widest block truncate max-w-35 text-center
+          letter-title text-base sm:text-lg tracking-widest block truncate text-center
           ${isDark ? 'text-stone-400' : 'text-stone-700'}
         `}>
           {name}
         </span>
-        {hoverImageUrl && (
-          <span className="text-[8px] text-rose-400/50 font-serif tracking-wider mt-0.5">
-            {isMobile ? 'tap to toggle' : 'hover photo'}
-          </span>
-        )}
+        
+        {/* Upload Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); onUpload(); }}
+            disabled={isUploading}
+            className={`
+              flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-serif transition-all
+              ${primaryImage 
+                ? isDark 
+                  ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-800' 
+                  : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100'
+                : 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm'
+              }
+            `}
+            title="Upload main photo"
+          >
+            <Camera className="w-3 h-3" />
+            {isUploading ? '...' : primaryImage ? 'Change' : 'Add Photo'}
+          </button>
+          
+          <button
+            onClick={(e) => { e.stopPropagation(); onUploadHover(); }}
+            disabled={isUploadingHover || !primaryImage}
+            className={`
+              flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-serif transition-all
+              ${!primaryImage 
+                ? 'opacity-40 cursor-not-allowed text-stone-400'
+                : hasHoverImage
+                  ? isDark 
+                    ? 'text-amber-400 hover:text-amber-300 hover:bg-stone-800' 
+                    : 'text-amber-600 hover:text-amber-800 hover:bg-stone-100'
+                  : isDark 
+                    ? 'text-stone-500 hover:text-stone-300 hover:bg-stone-800' 
+                    : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100'
+              }
+            `}
+            title={!primaryImage ? "Upload main photo first" : "Upload hover photo"}
+          >
+            <Sparkles className="w-3 h-3" />
+            {isUploadingHover ? '...' : hasHoverImage ? 'Hover ✓' : 'Hover'}
+          </button>
+        </div>
+        
+        {/* Small helper text */}
+        <span className="text-[8px] text-rose-400/40 font-serif tracking-wider text-center">
+          {!primaryImage 
+            ? '✨ add your photo to begin' 
+            : hasHoverImage 
+              ? '✦ hover to reveal' 
+              : 'add a hover photo'}
+        </span>
       </div>
     </motion.div>
   );
@@ -265,20 +289,22 @@ const ModernFrame: React.FC<{
 const Envelope: React.FC = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isEnvelopeOpen, setIsEnvelopeOpen] = useState(false);
   const [showLetterPreview, setShowLetterPreview] = useState(false);
   const [showMagic, setShowMagic] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   
-  const [uploadingSide, setUploadingSide] = useState<'left' | 'right' | null>(null);
-  const [uploadingHoverSide, setUploadingHoverSide] = useState<'left' | 'right' | null>(null);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const hoverFileInputRef = useRef<HTMLInputElement>(null);
+  // Upload modal states
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [uploadType, setUploadType] = useState<'main' | 'hover'>('main');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingHover, setIsUploadingHover] = useState(false);
   
   const timeoutsRef = useRef<number[]>([]);
 
+  // Fetch love letters
   const { data: loveLetters, isLoading, isError } = useQuery<LoveLetter[]>({
     queryKey: ["loveLetters"],
     queryFn: async () => {
@@ -287,6 +313,7 @@ const Envelope: React.FC = () => {
     },
   });
 
+  // Fetch user profile
   const { data: userProfile, refetch: refetchUserProfile } = useQuery<UserProfile>({
     queryKey: ["userProfile"],
     queryFn: async () => {
@@ -296,6 +323,7 @@ const Envelope: React.FC = () => {
     enabled: !!user,
   });
 
+  // Fetch couple info
   const { data: coupleInfo } = useQuery<CoupleInfo>({
     queryKey: ["coupleInfo"],
     queryFn: async () => {
@@ -315,102 +343,55 @@ const Envelope: React.FC = () => {
   const partnerName = coupleInfo?.partner_name || coupleInfo?.partner1_name || "Partner";
   
   const myPhoto = userProfile?.profile_picture || null;
-  const myHoverPhoto = userProfile?.hover_profile_picture || myPhoto;
+  const myHoverPhoto = userProfile?.hover_profile_picture || null;
   
   const partnerPhoto = null;
   const partnerHoverPhoto = null;
 
-  const handlePhotoUpload = (side: 'left' | 'right') => {
-    setUploadingSide(side);
-    fileInputRef.current?.click();
+  // Open upload modal
+  const openUploadModal = (type: 'main' | 'hover') => {
+    setUploadType(type);
+    setUploadModalOpen(true);
   };
 
-  const handleHoverPhotoUpload = (side: 'left' | 'right') => {
-    setUploadingHoverSide(side);
-    hoverFileInputRef.current?.click();
-  };
+  // Handle upload
+  const handleUpload = async (file: File) => {
+    const isMain = uploadType === 'main';
+    const endpoint = isMain 
+      ? '/auth/upload-profile-picture/'
+      : '/auth/upload-hover-profile-picture/';
+    const fieldName = isMain ? 'profile_picture' : 'hover_profile_picture';
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !uploadingSide) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      setUploadingSide(null);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      setUploadingSide(null);
-      return;
-    }
+    if (isMain) setIsUploading(true);
+    else setIsUploadingHover(true);
 
     try {
       const formData = new FormData();
-      formData.append('profile_picture', file);
+      formData.append(fieldName, file);
 
-      await api.patch('/auth/upload-profile-picture/', formData, {
+      await api.patch(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (uploadingSide === 'left') {
-        await refetchUserProfile();
-        toast.success('Main photo updated!');
-      } else {
-        toast.success('Photo uploaded!');
-      }
+      await refetchUserProfile();
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      
+      toast.success(isMain ? 'Main photo updated!' : 'Hover photo updated!');
+      setUploadModalOpen(false);
     } catch (error: any) {
+      console.error('Upload error:', error);
       toast.error(error.response?.data?.error || 'Failed to upload');
     } finally {
-      setUploadingSide(null);
-      e.target.value = '';
-    }
-  };
-
-  const handleHoverFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !uploadingHoverSide) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file for hover effect');
-      setUploadingHoverSide(null);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      setUploadingHoverSide(null);
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('hover_profile_picture', file);
-
-      await api.patch('/auth/upload-hover-profile-picture/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      if (uploadingHoverSide === 'left') {
-        await refetchUserProfile();
-        toast.success('Hover photo updated!');
-      } else {
-        toast.success('Hover photo uploaded!');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to upload hover photo');
-    } finally {
-      setUploadingHoverSide(null);
-      e.target.value = '';
+      if (isMain) setIsUploading(false);
+      else setIsUploadingHover(false);
     }
   };
 
   useEffect(() => {
-    return () => classNameTimeoutsClean();
+    return () => clearTimeouts();
   }, []);
 
-  const classNameTimeoutsClean = () => {
+  const clearTimeouts = () => {
     timeoutsRef.current.forEach((id) => clearTimeout(id));
     timeoutsRef.current = [];
   };
@@ -418,7 +399,7 @@ const Envelope: React.FC = () => {
   const handleEnvelopeClick = () => {
     if (!currentLetter || isAnimating) return;
 
-    classNameTimeoutsClean();
+    clearTimeouts();
     setIsAnimating(true);
     setIsEnvelopeOpen(true);
 
@@ -447,7 +428,7 @@ const Envelope: React.FC = () => {
     setShowLetterPreview(false);
     setShowMagic(false);
     setIsAnimating(false);
-    classNameTimeoutsClean();
+    clearTimeouts();
   };
 
   return (
@@ -519,19 +500,15 @@ const Envelope: React.FC = () => {
         }
       `}</style>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
-      <input
-        ref={hoverFileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleHoverFileSelect}
-        className="hidden"
+      <UploadPhotoModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onUpload={handleUpload}
+        title={uploadType === 'main' ? 'Upload Main Photo' : 'Upload Hover Photo'}
+        description={uploadType === 'main' 
+          ? 'This photo will be shown by default'
+          : 'This photo will appear when someone hovers over the frame'}
+        buttonText={uploadType === 'main' ? 'Upload Main Photo' : 'Upload Hover Photo'}
       />
 
       <div className="flex flex-col items-center justify-center py-12 select-none overflow-hidden">
@@ -545,13 +522,14 @@ const Envelope: React.FC = () => {
               name={myName} 
               side="left" 
               isDark={isDark} 
-              onUpload={handlePhotoUpload}
-              onUploadHover={handleHoverPhotoUpload}
-              isUploading={uploadingSide === 'left'}
-              isUploadingHover={uploadingHoverSide === 'left'}
+              onUpload={() => openUploadModal('main')}
+              onUploadHover={() => openUploadModal('hover')}
+              isUploading={isUploading}
+              isUploadingHover={isUploadingHover}
             />
           </motion.div>
 
+          {/* Envelope Trigger */}
           <motion.button
             type="button"
             onClick={handleEnvelopeClick}
@@ -667,10 +645,10 @@ const Envelope: React.FC = () => {
               name={partnerName} 
               side="right" 
               isDark={isDark} 
-              onUpload={handlePhotoUpload}
-              onUploadHover={handleHoverPhotoUpload}
-              isUploading={uploadingSide === 'right'}
-              isUploadingHover={uploadingHoverSide === 'right'}
+              onUpload={() => openUploadModal('main')}
+              onUploadHover={() => openUploadModal('hover')}
+              isUploading={isUploading}
+              isUploadingHover={isUploadingHover}
             />
           </motion.div>
         </div>
@@ -684,10 +662,10 @@ const Envelope: React.FC = () => {
               name={myName} 
               side="left" 
               isDark={isDark} 
-              onUpload={handlePhotoUpload}
-              onUploadHover={handleHoverPhotoUpload}
-              isUploading={uploadingSide === 'left'}
-              isUploadingHover={uploadingHoverSide === 'left'}
+              onUpload={() => openUploadModal('main')}
+              onUploadHover={() => openUploadModal('hover')}
+              isUploading={isUploading}
+              isUploadingHover={isUploadingHover}
             />
             <ModernFrame 
               imageUrl={partnerPhoto} 
@@ -695,10 +673,10 @@ const Envelope: React.FC = () => {
               name={partnerName} 
               side="right" 
               isDark={isDark} 
-              onUpload={handlePhotoUpload}
-              onUploadHover={handleHoverPhotoUpload}
-              isUploading={uploadingSide === 'right'}
-              isUploadingHover={uploadingHoverSide === 'right'}
+              onUpload={() => openUploadModal('main')}
+              onUploadHover={() => openUploadModal('hover')}
+              isUploading={isUploading}
+              isUploadingHover={isUploadingHover}
             />
           </div>
 
