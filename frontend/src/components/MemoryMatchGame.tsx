@@ -35,16 +35,20 @@ interface GameScore {
 }
 
 interface MemoryMatchGameProps {
-  yearId: number;
-  yearNumber: number;
-  onBack: () => void;
+  // ✅ Make year optional for global play
+  yearId?: number;
+  onBack?: () => void;
   currentScore?: GameScore;
   onWin: (winner: string) => void;
   onReset: () => void;
 }
 
 const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
-  yearId, onBack, currentScore, onWin, onReset,
+  yearId,
+  onBack,
+  currentScore,
+  onWin,
+  onReset,
 }) => {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -65,10 +69,12 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
   const [gameWinner, setGameWinner] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
 
+  // ✅ Fetch memories (optionally by year, or all if no year)
   const { data: memories, isLoading } = useQuery<Memory[]>({
-    queryKey: ['memoriesWithImages', yearId],
+    queryKey: ['memoriesWithImages', yearId || 'all'],
     queryFn: async () => {
-      const response = await api.get(`/memories/?year=${yearId}`);
+      const url = yearId ? `/memories/?year=${yearId}` : '/memories/';
+      const response = await api.get(url);
       const allMemories = Array.isArray(response.data) ? response.data : response.data.results || [];
       return allMemories.filter((m: Memory) => m.image);
     },
@@ -83,6 +89,7 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
       winner = 'me';
       setGameWinner(displayName);
       confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+      toast.success(`You win! 🎉`, { icon: '🏆' });
     } else if (finalShairaPairs > finalMyPairs) {
       winner = 'shaira';
       setGameWinner(partnerName);
@@ -104,8 +111,22 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
     const gameCards: Card[] = [];
 
     selected.forEach((memory, index) => {
-      gameCards.push({ id: index * 2 + 1, memoryId: memory.id, image: memory.image, title: memory.title, isFlipped: false, isMatched: false });
-      gameCards.push({ id: index * 2 + 2, memoryId: memory.id, image: memory.image, title: memory.title, isFlipped: false, isMatched: false });
+      gameCards.push({ 
+        id: index * 2 + 1, 
+        memoryId: memory.id, 
+        image: memory.image, 
+        title: memory.title, 
+        isFlipped: false, 
+        isMatched: false 
+      });
+      gameCards.push({ 
+        id: index * 2 + 2, 
+        memoryId: memory.id, 
+        image: memory.image, 
+        title: memory.title, 
+        isFlipped: false, 
+        isMatched: false 
+      });
     });
 
     setCards([...gameCards].sort(() => Math.random() - 0.5));
@@ -225,16 +246,18 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
       initial={{ opacity: 0, scale: 0.98 }} 
       animate={{ opacity: 1, scale: 1 }} 
       exit={{ opacity: 0, scale: 0.98 }}
-      className="relative z-10 w-full p-6 sm:p-12"
+      className="relative z-10 w-full"
     >
-      {/* Score Header - Ledger Style (Matching TicTacToe) */}
+      {/* Score Header - Ledger Style */}
       <div className="flex items-center justify-between mb-12 flex-wrap gap-6">
-        <button 
-          onClick={onBack} 
-          className={`flex items-center gap-2 text-2.5 font-serif uppercase tracking-widest transition-colors ${textSub} hover:${textMain}`}
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Menu
-        </button>
+        {onBack && (
+          <button 
+            onClick={onBack} 
+            className={`flex items-center gap-2 text-2.5 font-serif uppercase tracking-widest transition-colors ${textSub} hover:${textMain}`}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Menu
+          </button>
+        )}
         
         <div className={`flex items-center gap-8 px-8 py-3 rounded-sm border ${isDark ? 'bg-[#1a050f]/60 border-rose-900/50' : 'bg-white/60 border-rose-200/60'}`}>
           <div className="text-center">
@@ -263,13 +286,11 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
         
         <div className="h-8">
           {gameStarted && !gameCompleted && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-center gap-6">
-              {/* Timer Tag */}
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-center gap-6 flex-wrap">
               <div className={`flex items-center gap-2 px-4 py-1.5 rounded-sm border transform -rotate-1 ${isDark ? 'bg-[#2a0815]/80 border-rose-900/60 text-amber-200/90' : 'bg-[#FFFAF0]/80 border-rose-200 text-amber-700'}`}>
                 <Timer className="w-4 h-4" />
                 <span className="font-serif italic tracking-wide">{formatTime(timer)}</span>
               </div>
-              {/* Turn Tag */}
               <div className={`flex items-center gap-2 px-4 py-1.5 rounded-sm border transform rotate-1 shadow-sm ${
                 currentPlayer === 'me' 
                   ? (isDark ? 'bg-[#1a050f]/80 border-rose-900/60 text-rose-300' : 'bg-white border-rose-200 text-rose-700') 
@@ -290,7 +311,7 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
         <div className={`text-center py-16 px-4 border-2 border-dashed rounded-sm max-w-lg mx-auto ${isDark ? 'border-rose-900/50 bg-[#1a050f]/40' : 'border-rose-200 bg-rose-50/40'}`}>
           <Camera className={`w-10 h-10 mx-auto mb-4 ${isDark ? 'text-rose-800/80' : 'text-rose-300'}`} />
           <h4 className={`text-2xl font-serif mb-2 ${textMain}`}>Not enough photos!</h4>
-          <p className={`font-serif italic mb-6 ${textSub}`}>You need at least 2 photo memories in this chapter to play.</p>
+          <p className={`font-serif italic mb-6 ${textSub}`}>You need at least 2 photo memories to play.</p>
           <div className="flex justify-center">
             <div className={`px-4 py-1 rounded-full border text-2.5 font-serif uppercase tracking-widest ${isDark ? 'bg-black/20 border-rose-900 text-rose-400' : 'bg-white border-rose-100 text-rose-500'}`}>
               Current photos: {memoriesWithImages.length}
@@ -376,9 +397,8 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
         </div>
       ) : (
         
-        /* Game Board (Dotted Journal Paper) */
+        /* Game Board */
         <>
-          {/* Current Score Indicators */}
           <div className="flex justify-center gap-6 sm:gap-12 mb-8 relative z-10">
             <div className={`text-center border px-5 py-2 rounded-sm transform -rotate-2 shadow-sm ${
               isDark ? 'bg-[#1a050f]/60 border-rose-900/50' : 'bg-white border-rose-200/80'
@@ -416,7 +436,6 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
                 >
                   <AnimatePresence mode="wait">
                     {card.isFlipped || card.isMatched ? (
-                      /* Card Front (Vintage Polaroid Style) */
                       <motion.div key="front" initial={{ rotateY: 90 }} animate={{ rotateY: 0 }} exit={{ rotateY: 90 }} transition={{ duration: 0.2 }}
                         className={`w-full h-full p-2 sm:p-3 pb-6 sm:pb-8 rounded-sm shadow-sm border flex flex-col ${
                           isDark ? 'bg-[#FFFAF0] border-rose-200' : 'bg-white border-rose-100'
@@ -426,20 +445,17 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
                         </div>
                       </motion.div>
                     ) : (
-                      /* Card Back (Textured Envelope/Paper) */
                       <motion.div key="back" initial={{ rotateY: -90 }} animate={{ rotateY: 0 }} exit={{ rotateY: -90 }} transition={{ duration: 0.2 }}
                         className={`w-full h-full border rounded-sm flex items-center justify-center shadow-sm relative overflow-hidden ${
                           isDark ? 'bg-[#2a0815] border-rose-900/60' : 'bg-rose-50 border-rose-200'
                         }`}>
                         
-                        {/* Premium Wax Seal Effect */}
                         <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border ${
                           isDark ? 'bg-rose-900 border-rose-800 shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),_0_2px_5px_rgba(0,0,0,0.5)]' : 'bg-rose-700 border-rose-800 shadow-[inset_0_2px_4px_rgba(255,255,255,0.2),_0_2px_5px_rgba(225,29,72,0.3)]'
                         }`}>
                           <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white/80 opacity-90" />
                         </div>
                         
-                        {/* Subtle crosshatch pattern for card back */}
                         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000)', backgroundSize: '8px 8px', backgroundPosition: '0 0, 4px 4px' }} />
                       </motion.div>
                     )}
