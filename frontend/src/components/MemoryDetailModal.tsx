@@ -32,6 +32,74 @@ interface MemoryDetailModalProps {
   currentDateStr?: string;
 }
 
+const flipDuration = 0.45;
+
+const leftVariants = {
+  enter: (dir: number) => ({
+    rotateY: dir === 1 ? 90 : 0,
+    zIndex: dir === 1 ? 20 : 0,
+    filter: dir === 1 ? "brightness(0.6)" : "brightness(1)",
+    opacity: 1, 
+  }),
+  center: (dir: number) => ({
+    rotateY: 0,
+    zIndex: dir === 1 ? 20 : 5,
+    filter: "brightness(1)",
+    opacity: 1,
+    transition: {
+      rotateY: { duration: flipDuration, delay: dir === 1 ? flipDuration : 0, ease: "easeOut" as const },
+      filter: { duration: flipDuration, delay: dir === 1 ? flipDuration : 0, ease: "easeOut" as const }
+    }
+  }),
+  exit: (dir: number) => ({
+    rotateY: dir === -1 ? 90 : 0,
+    zIndex: dir === -1 ? 20 : 0,
+    filter: dir === -1 ? "brightness(0.6)" : "brightness(1)",
+    opacity: 0,
+    transition: {
+      rotateY: { duration: flipDuration, ease: "easeIn" as const },
+      filter: { duration: flipDuration, ease: "easeIn" as const },
+      opacity: { duration: 0, delay: dir === 1 ? flipDuration * 2 : flipDuration }
+    }
+  })
+};
+
+const rightVariants = {
+  enter: (dir: number) => ({
+    rotateY: dir === -1 ? -90 : 0,
+    zIndex: dir === -1 ? 20 : 0,
+    filter: dir === -1 ? "brightness(0.6)" : "brightness(1)",
+    opacity: 1,
+  }),
+  center: (dir: number) => ({
+    rotateY: 0,
+    zIndex: dir === -1 ? 20 : 5,
+    filter: "brightness(1)",
+    opacity: 1,
+    transition: {
+      rotateY: { duration: flipDuration, delay: dir === -1 ? flipDuration : 0, ease: "easeOut" as const },
+      filter: { duration: flipDuration, delay: dir === -1 ? flipDuration : 0, ease: "easeOut" as const }
+    }
+  }),
+  exit: (dir: number) => ({
+    rotateY: dir === 1 ? -90 : 0,
+    zIndex: dir === 1 ? 20 : 0,
+    filter: dir === 1 ? "brightness(0.6)" : "brightness(1)",
+    opacity: 0,
+    transition: {
+      rotateY: { duration: flipDuration, ease: "easeIn" as const },
+      filter: { duration: flipDuration, ease: "easeIn" as const },
+      opacity: { duration: 0, delay: dir === -1 ? flipDuration * 2 : flipDuration }
+    }
+  })
+};
+
+const mobileVariants = {
+  enter: (direction: number) => ({ x: direction > 0 ? 30 : -30, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction > 0 ? -30 : 30, opacity: 0 }),
+};
+
 const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   isOpen,
   onClose,
@@ -47,9 +115,16 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   currentDateStr = '',
 }) => {
   const [currentSpread, setCurrentSpread] = useState(0);
+  const [prevMemoryId, setPrevMemoryId] = useState<number | null>(null);
   const [isFlipping, setIsFlipping] = useState(false);
   const [direction, setDirection] = useState(0);
-  const [prevMemoryId, setPrevMemoryId] = useState<number | null>(null);
+
+  // FIX: Sychronous state reset kapag nagbago yung mismong memory object
+  // Bago pa man mag-draw sa screen, alam na ng React na babalik sa Page 0 ang panibagong kwento.
+  if (memory && memory.id !== prevMemoryId) {
+    setPrevMemoryId(memory.id);
+    setCurrentSpread(0);
+  }
 
   const splitIntoPages = (text: string, firstPageChars: number = 375, regularPageChars: number = 600) => {
     if (!text) return [''];
@@ -97,27 +172,12 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   const canGoNext = hasNextSpread || hasNextMemory || hasNextDate;
   const canGoPrev = hasPrevSpread || hasPrevMemory || hasPrevDate;
 
+  // Nilinis na useEffect dahil hawak na ng render check sa taas ang tracking ng memory.id
   useEffect(() => {
-    setCurrentSpread(0);
-    setIsFlipping(false);
-  }, [memory?.id]);
-
-  useEffect(() => {
-    if (prevMemoryId !== null && memory?.id !== prevMemoryId) {
-      setIsFlipping(true);
-      setDirection(1);
-      setTimeout(() => {
-        setIsFlipping(false);
-      }, 600);
+    if (!isOpen) {
+      setPrevMemoryId(null);
     }
-    setPrevMemoryId(memory?.id ?? null);
-  }, [memory?.id, prevMemoryId]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setPrevMemoryId(memory?.id ?? null);
-    }
-  }, [isOpen, memory?.id]);
+  }, [isOpen]);
 
   const turnPage = (dir: number) => {
     if (isFlipping) return;
@@ -128,18 +188,11 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
         setDirection(1);
         setCurrentSpread((prev) => prev + 1);
         setTimeout(() => setIsFlipping(false), 900);
-      } else if (hasNextMemory && onNext) {
-        onNext();
-        setCurrentSpread(0);
-        setDirection(1);
+      } else if ((hasNextMemory || hasNextDate) && onNext) {
         setIsFlipping(true);
-        setTimeout(() => setIsFlipping(false), 600);
-      } else if (hasNextDate && onNext) {
-        onNext();
-        setCurrentSpread(0);
         setDirection(1);
-        setIsFlipping(true);
-        setTimeout(() => setIsFlipping(false), 600);
+        onNext(); // Hayaan nating mag-update ang prop nang kusa nang walang glitchy state resets dito
+        setTimeout(() => setIsFlipping(false), 900);
       }
       return;
     }
@@ -150,30 +203,22 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
         setDirection(-1);
         setCurrentSpread((prev) => prev - 1);
         setTimeout(() => setIsFlipping(false), 900);
-      } else if (hasPrevMemory && onPrev) {
-        onPrev();
-        setCurrentSpread(0);
-        setDirection(-1);
+      } else if ((hasPrevMemory || hasPrevDate) && onPrev) {
         setIsFlipping(true);
-        setTimeout(() => setIsFlipping(false), 600);
-      } else if (hasPrevDate && onPrev) {
-        onPrev();
-        setCurrentSpread(0);
         setDirection(-1);
-        setIsFlipping(true);
-        setTimeout(() => setIsFlipping(false), 600);
+        onPrev();
+        setTimeout(() => setIsFlipping(false), 900);
       }
       return;
     }
   };
 
   const handleNextMemory = () => {
-    if (onNext && (hasNextMemory || hasNextDate)) {
-      onNext();
-      setCurrentSpread(0);
-      setDirection(1);
+    if (onNext && (hasNextMemory || hasNextDate) && !isFlipping) {
       setIsFlipping(true);
-      setTimeout(() => setIsFlipping(false), 600);
+      setDirection(1);
+      onNext();
+      setTimeout(() => setIsFlipping(false), 900);
     }
   };
 
@@ -181,70 +226,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
   
   const formattedDate = date ? new Date(date + 'T00:00:00') : null;
   const formattedCurrentDate = currentDateStr ? new Date(currentDateStr + 'T00:00:00') : null;
-
-  const flipDuration = 0.45;
-
-  const leftVariants = {
-    enter: (dir: number) => ({
-      rotateY: dir === 1 ? 90 : 0,
-      zIndex: dir === 1 ? 20 : 0,
-      filter: dir === 1 ? "brightness(0.6)" : "brightness(1)",
-    }),
-    center: (dir: number) => ({
-      rotateY: 0,
-      zIndex: dir === 1 ? 20 : 5,
-      filter: "brightness(1)",
-      transition: {
-        rotateY: { duration: flipDuration, delay: dir === 1 ? flipDuration : 0, ease: "easeOut" as const },
-        filter: { duration: flipDuration, delay: dir === 1 ? flipDuration : 0, ease: "easeOut" as const }
-      }
-    }),
-    exit: (dir: number) => ({
-      rotateY: dir === -1 ? 90 : 0,
-      zIndex: dir === -1 ? 20 : 0,
-      filter: dir === -1 ? "brightness(0.6)" : "brightness(1)",
-      opacity: 1, 
-      transition: {
-        rotateY: { duration: flipDuration, ease: "easeIn" as const },
-        filter: { duration: flipDuration, ease: "easeIn" as const },
-        opacity: { duration: 0.01, delay: dir === 1 ? flipDuration * 2 : 0 }
-      }
-    })
-  };
-
-  const rightVariants = {
-    enter: (dir: number) => ({
-      rotateY: dir === -1 ? -90 : 0,
-      zIndex: dir === -1 ? 20 : 0,
-      filter: dir === -1 ? "brightness(0.6)" : "brightness(1)",
-    }),
-    center: (dir: number) => ({
-      rotateY: 0,
-      zIndex: dir === -1 ? 20 : 5,
-      filter: "brightness(1)",
-      transition: {
-        rotateY: { duration: flipDuration, delay: dir === -1 ? flipDuration : 0, ease: "easeOut" as const },
-        filter: { duration: flipDuration, delay: dir === -1 ? flipDuration : 0, ease: "easeOut" as const }
-      }
-    }),
-    exit: (dir: number) => ({
-      rotateY: dir === 1 ? -90 : 0,
-      zIndex: dir === 1 ? 20 : 0,
-      filter: dir === 1 ? "brightness(0.6)" : "brightness(1)",
-      opacity: 1,
-      transition: {
-        rotateY: { duration: flipDuration, ease: "easeIn" as const },
-        filter: { duration: flipDuration, ease: "easeIn" as const },
-        opacity: { duration: 0.01, delay: dir === -1 ? flipDuration * 2 : 0 }
-      }
-    })
-  };
-
-  const mobileVariants = {
-    enter: (direction: number) => ({ x: direction > 0 ? 30 : -30, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (direction: number) => ({ x: direction > 0 ? -30 : 30, opacity: 0 }),
-  };
 
   const renderLeftContent = (index: number) => {
     if (index === 0) {
@@ -372,7 +353,6 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
             </>
           )}
 
-          {/* Nilakihan din ang max-h dito para mas magamit ang buong vertical space ng papel */}
           <div className="flex-1 flex flex-col justify-start max-h-[460px] overflow-hidden py-4 font-serif text-lg leading-8 text-gray-700 whitespace-pre-line">
             {isFirst ? pages[0] : pages[index * 2]}
           </div>
@@ -393,7 +373,8 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
             {showNextMemoryButton && (
               <button
                 onClick={(e) => { e.stopPropagation(); handleNextMemory(); }}
-                className="group flex items-center gap-2 font-serif text-sm text-[#8C2332] hover:text-rose-900 transition-colors"
+                disabled={isFlipping}
+                className="group flex items-center gap-2 font-serif text-sm text-[#8C2332] hover:text-rose-900 transition-colors disabled:opacity-30"
               >
                 <span className="text-xs uppercase tracking-widest font-semibold">
                   {hasNextMemory ? "Next Memory" : "Next Date"}
@@ -452,7 +433,7 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
                   <div className="pointer-events-none absolute bottom-0 left-1/2 top-0 hidden w-12 -translate-x-1/2 bg-linear-to-r from-[rgba(0,0,0,0.02)] via-[rgba(0,0,0,0.15)] to-[rgba(0,0,0,0.02)] md:block z-40" />
                   <div className="absolute left-1/2 top-0 hidden h-full w-4 -translate-x-1/2 bg-linear-to-r from-[#d9d5ce] via-[#fdfbf7] to-[#d9d5ce] md:block z-0" />
 
-                  <div className="flex w-full flex-row relative z-10">
+                  <div className="flex w-full flex-row relative z-10" style={{ transformStyle: "preserve-3d" }}>
                     
                     {/* LEFT PAGE */}
                     <div className="relative w-1/2" style={{ perspective: "1500px" }}>
