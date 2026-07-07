@@ -8,7 +8,7 @@ import {
   Image as ImageIcon,
   ArrowLeft,
   Trophy,
-  Sparkles
+  Gamepad2,
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import MemoryMatchGame from './MemoryMatchGame';
 import DeleteConfirmModal from './DeleteConfirmModal';
+import { useNavigate } from 'react-router-dom';
 
 interface GameScore {
   id: number;
@@ -34,8 +35,9 @@ interface LeaderboardData {
 }
 
 interface GamesArenaProps {
-  yearId: number;
-  yearNumber: number;
+  // ✅ Make year optional for global play
+  yearId?: number;
+  yearNumber?: number;
 }
 
 type GameType = 'tictactoe' | 'memorymatch' | 'menu';
@@ -43,6 +45,7 @@ type GameType = 'tictactoe' | 'memorymatch' | 'menu';
 const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
   const [activeGame, setActiveGame] = useState<GameType>('menu');
   const [resetTarget, setResetTarget] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -51,10 +54,12 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
   const displayName = user?.display_name || 'You';
   const partnerName = user?.partner_name || 'Partner';
 
+  // ✅ Fetch leaderboard (with or without year)
   const { data: leaderboard } = useQuery<LeaderboardData>({
-    queryKey: ['leaderboard', yearId],
+    queryKey: ['leaderboard', yearId || 'all'],
     queryFn: async () => {
-      const response = await api.get(`/game-scores/leaderboard/?year_id=${yearId}`);
+      const url = yearId ? `/game-scores/leaderboard/?year_id=${yearId}` : '/game-scores/leaderboard/';
+      const response = await api.get(url);
       return response.data;
     },
   });
@@ -62,14 +67,14 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
   const recordWinMutation = useMutation({
     mutationFn: async ({ gameName, winner }: { gameName: string; winner: string }) => {
       const response = await api.post('/game-scores/record_win/', {
-        year_id: yearId,
+        year_id: yearId || 0,
         game_name: gameName,
         winner,
       });
       return response.data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['leaderboard', yearId] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard', yearId || 'all'] });
 
       if (variables.winner === 'me') {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -85,18 +90,24 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
       const existingScore = leaderboard?.games?.find((g) => g.game_name === gameName);
       if (existingScore) {
         const response = await api.put(`/game-scores/${existingScore.id}/`, {
-          year: yearId, game_name: gameName, my_score: 0, shaira_score: 0,
+          year: yearId || 0,
+          game_name: gameName,
+          my_score: 0,
+          shaira_score: 0,
         });
         return response.data;
       } else {
         const response = await api.post('/game-scores/', {
-          year: yearId, game_name: gameName, my_score: 0, shaira_score: 0,
+          year: yearId || 0,
+          game_name: gameName,
+          my_score: 0,
+          shaira_score: 0,
         });
         return response.data;
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leaderboard', yearId] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard', yearId || 'all'] });
       toast.success('Scoreboard erased! 🔄');
       setResetTarget(null);
     },
@@ -121,12 +132,22 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
     },
   ];
 
-  // Premium Palette Logic
   const isDark = theme === 'dark';
   const bgMain = isDark ? 'bg-[#2a0815]' : 'bg-[#FFFAF0]';
   const textMain = isDark ? 'text-rose-50' : 'text-rose-950';
   const textSub = isDark ? 'text-rose-300' : 'text-rose-800';
   const cardBg = isDark ? 'bg-[#4c0519]/40 border-rose-900/50' : 'bg-white border-rose-100';
+
+  // ✅ If no yearId, show a back button to dashboard
+  const handleBack = () => {
+    if (yearId) {
+      // If in year page context, go back to menu
+      setActiveGame('menu');
+    } else {
+      // If in global games page, go to dashboard
+      navigate('/dashboard');
+    }
+  };
 
   return (
     <div className={`space-y-8 max-w-5xl mx-auto p-6 sm:p-10 ${bgMain} rounded-sm min-h-screen transition-colors duration-300 shadow-[0_10px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.4)] border border-rose-900/5 relative overflow-hidden`}>
@@ -141,13 +162,22 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
 
       {/* Header & Overall Scoreboard */}
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-rose-200/50 dark:border-rose-900/50">
-        <div>
-          <p className={`text-2.75 font-bold uppercase tracking-[0.2em] ${textSub} mb-2 flex items-center gap-2`}>
-            <Sparkles className="w-3 h-3" /> Playful Moments
-          </p>
-          <h2 className={`text-4xl sm:text-5xl font-serif tracking-wide ${textMain}`}>
-            Games & Wagers <span className="text-rose-400 font-light italic text-3xl ml-2">Vol. {yearNumber}</span>
-          </h2>
+        <div className="flex items-start gap-4">
+          <button
+            onClick={handleBack}
+            className={`p-2 rounded-full transition-colors ${isDark ? 'hover:bg-rose-900/50' : 'hover:bg-rose-50'}`}
+            title="Back"
+          >
+            <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-rose-400' : 'text-rose-600'}`} />
+          </button>
+          <div>
+            <p className={`text-2.75 font-bold uppercase tracking-[0.2em] ${textSub} mb-2 flex items-center gap-2`}>
+              <Gamepad2 className="w-4 h-4" /> Games Arena
+            </p>
+            <h2 className={`text-4xl sm:text-5xl font-serif tracking-wide ${textMain}`}>
+              Play &amp; Wagers <span className="text-rose-400 font-light italic text-3xl ml-2">{yearNumber ? `Vol. ${yearNumber}` : '🎮'}</span>
+            </h2>
+          </div>
         </div>
 
         {/* Journal Ledger Scoreboard */}
@@ -235,7 +265,6 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
           <motion.div key="memorymatch" className="relative z-10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <MemoryMatchGame
               yearId={yearId}
-              yearNumber={yearNumber}
               onBack={() => setActiveGame('menu')}
               onWin={(winner) => recordWinMutation.mutate({ gameName: 'memorymatch', winner })}
               currentScore={leaderboard?.games?.find((g) => g.game_name === 'memorymatch')}
@@ -367,7 +396,6 @@ const TicTacToeGame: React.FC<TicTacToeProps> = ({ onBack, onWin, currentScore, 
       <div className="max-w-87.5 sm:max-w-100 mx-auto p-4 sm:p-8">
         <div className="grid grid-cols-3">
           {board.map((cell, index) => {
-            // Logic to create the classic # drawn shape instead of full borders
             const borderBottom = index < 6 ? (isDark ? 'border-b border-rose-900/60' : 'border-b border-rose-200') : '';
             const borderRight = index % 3 !== 2 ? (isDark ? 'border-r border-rose-900/60' : 'border-r border-rose-200') : '';
             
