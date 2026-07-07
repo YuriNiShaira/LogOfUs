@@ -3,15 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Camera, Star, Gamepad2, Coffee, Music, Heart, // 
+  Plus, Camera, Coffee, Heart,
 } from 'lucide-react';
 import { api } from '../services/api';
 import CreateMemoryModal from '../components/CreateMemoryModal';
 import EditMemoryModal from '../components/EditMemoryModal';
-import AnimeRatingSection from '../components/AnimeRatingSection';
 import FunFactsSection from '../components/FunFactsSection';
-import GamesArena from '../components/GamesArena';
-import PlaylistSection from '../components/PlaylistSection';
 import MemoryDetailModal from '../components/MemoryDetailModal';
 import RomanticBackground from '../components/RomanticBackground';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
@@ -27,7 +24,6 @@ import {
   MemoriesControls,
 } from '../components/year-detail';
 import toast from 'react-hot-toast';
-// import PetGallerySection from '../components/year-detail/PetGallerySection'; // 
 
 interface Year {
   id: number;
@@ -36,7 +32,6 @@ interface Year {
   description?: string;
 }
 
-// Define the Memory type that matches MemoryDetailModal's expectations
 interface Memory {
   id: number;
   title: string;
@@ -51,8 +46,7 @@ interface Memory {
   year: number;
 }
 
-type TabType = 'memories' | 'funfacts' | 'anime' | 'playlist' | 'games' | 'pets';
-
+type TabType = 'memories' | 'funfacts';
 type SortOrder = 'newest' | 'oldest';
 type LayoutStyle = 'scattered' | 'timeline' | 'masonry';
 
@@ -141,13 +135,10 @@ const YearDetailPage: React.FC = () => {
     });
   }, [memoriesData, sortOrder]);
 
+  // Only keep Memories and Fun Facts tabs
   const tabs = [
     { id: 'memories' as TabType, label: 'Memories', icon: Camera, color: 'from-pink-500 to-rose-500' },
     { id: 'funfacts' as TabType, label: 'Fun Facts', icon: Coffee, color: 'from-orange-500 to-amber-500' },
-    { id: 'anime' as TabType, label: 'Watchlist', icon: Star, color: 'from-purple-500 to-pink-500' },
-    { id: 'playlist' as TabType, label: 'Playlist', icon: Music, color: 'from-green-500 to-emerald-500' },
-    { id: 'games' as TabType, label: 'Mini Games', icon: Gamepad2, color: 'from-blue-500 to-cyan-500' },
-    // { id: 'pets' as TabType, label: '🐾 Pets', icon: PawPrint, color: 'from-amber-500 to-orange-500' }, 
   ];
 
   const stats = useMemo(() => {
@@ -193,7 +184,6 @@ const YearDetailPage: React.FC = () => {
     }
   }, [pendingMemoryId, memories, isViewModalOpen, navigate, location.pathname]);
 
-  // Handle return to book from the modal
   const handleReturnToBook = () => {
     if (selectedMemoryForView) {
       navigate('/calendar', { 
@@ -255,7 +245,7 @@ const YearDetailPage: React.FC = () => {
           />
         )}
 
-        {/* Tabs */}
+        {/* Tabs - Only Memories and Fun Facts */}
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
           <div className="flex gap-2 p-2 bg-white/50 backdrop-blur-md rounded-2xl flex-wrap shadow-md border border-white/60">
             {tabs.map((tab) => {
@@ -368,39 +358,11 @@ const YearDetailPage: React.FC = () => {
             </motion.div>
           )}
 
-          {activeTab === 'anime' && (
-            <motion.div key="anime" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <AnimeRatingSection yearId={parseInt(yearId!)} yearNumber={year.year_number} />
-            </motion.div>
-          )}
           {activeTab === 'funfacts' && (
             <motion.div key="funfacts" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               <FunFactsSection yearId={parseInt(yearId!)} yearNumber={year.year_number} />
             </motion.div>
           )}
-          {activeTab === 'playlist' && (
-            <motion.div key="playlist" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <PlaylistSection yearId={parseInt(yearId!)} yearNumber={year.year_number} />
-            </motion.div>
-          )}
-          {activeTab === 'games' && (
-            <motion.div key="games" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <GamesArena yearId={parseInt(yearId!)} yearNumber={year.year_number} />
-            </motion.div>
-          )}
-          {/* PETS TAB - 
-          {activeTab === 'pets' && (
-            <motion.div 
-              key="pets" 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white/40 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-rose-100"
-            >
-              <PetGallerySection yearId={parseInt(yearId!)} yearNumber={year.year_number} />
-            </motion.div>
-          )}
-          */}
         </AnimatePresence>
       </div>
 
