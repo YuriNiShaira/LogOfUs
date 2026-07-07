@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard';
 import YearDetailPage from './pages/YearDetailPage';
 import BucketListPage from './pages/BucketListPage';
 import MemoryCalendarPage from './pages/MemoryCalendarPage';
+import WatchlistPlaylistPage from './pages/WatchlistPlaylistPage';
+import GamesArenaPage from './pages/GamesArenaPage';
 import ContactPage from './pages/ContactPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -73,6 +75,16 @@ function App() {
                   <Route path="/calendar" element={
                     <PrivateRoute>
                       <MemoryCalendarPage />
+                    </PrivateRoute>
+                  } />
+                  <Route path="/watchlist-playlist" element={
+                    <PrivateRoute>
+                      <WatchlistPlaylistPage />
+                    </PrivateRoute>
+                  } />
+                  <Route path="/games" element={
+                    <PrivateRoute>
+                      <GamesArenaPage />
                     </PrivateRoute>
                   } />
                   <Route path="*" element={<NotFoundPage />} />
