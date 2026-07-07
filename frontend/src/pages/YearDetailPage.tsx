@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Camera, Star, Gamepad2, Coffee, Music, Heart, PawPrint, // ✅ ADD PawPrint
+  Plus, Camera, Star, Gamepad2, Coffee, Music, Heart, // 
 } from 'lucide-react';
 import { api } from '../services/api';
 import CreateMemoryModal from '../components/CreateMemoryModal';
@@ -27,7 +27,7 @@ import {
   MemoriesControls,
 } from '../components/year-detail';
 import toast from 'react-hot-toast';
-import PetGallerySection from '../components/year-detail/PetGallerySection';
+// import PetGallerySection from '../components/year-detail/PetGallerySection'; // 
 
 interface Year {
   id: number;
@@ -51,7 +51,6 @@ interface Memory {
   year: number;
 }
 
-// ✅ ADD 'pets' to TabType
 type TabType = 'memories' | 'funfacts' | 'anime' | 'playlist' | 'games' | 'pets';
 
 type SortOrder = 'newest' | 'oldest';
@@ -148,7 +147,7 @@ const YearDetailPage: React.FC = () => {
     { id: 'anime' as TabType, label: 'Watchlist', icon: Star, color: 'from-purple-500 to-pink-500' },
     { id: 'playlist' as TabType, label: 'Playlist', icon: Music, color: 'from-green-500 to-emerald-500' },
     { id: 'games' as TabType, label: 'Mini Games', icon: Gamepad2, color: 'from-blue-500 to-cyan-500' },
-    { id: 'pets' as TabType, label: '🐾 Pets', icon: PawPrint, color: 'from-amber-500 to-orange-500' },
+    // { id: 'pets' as TabType, label: '🐾 Pets', icon: PawPrint, color: 'from-amber-500 to-orange-500' }, 
   ];
 
   const stats = useMemo(() => {
@@ -389,7 +388,7 @@ const YearDetailPage: React.FC = () => {
               <GamesArena yearId={parseInt(yearId!)} yearNumber={year.year_number} />
             </motion.div>
           )}
-          {/* PETS TAB */}
+          {/* PETS TAB - 
           {activeTab === 'pets' && (
             <motion.div 
               key="pets" 
@@ -401,6 +400,7 @@ const YearDetailPage: React.FC = () => {
               <PetGallerySection yearId={parseInt(yearId!)} yearNumber={year.year_number} />
             </motion.div>
           )}
+          */}
         </AnimatePresence>
       </div>
 
