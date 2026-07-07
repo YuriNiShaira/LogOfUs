@@ -11,7 +11,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import RomanticBackground from '../components/RomanticBackground';
 import Navbar from '../components/Navbar';
 import PlaylistSection from '../components/PlaylistSection';
-import AnimeRatingSection from '../components/AnimeRatingSection';
 
 type TabType = 'watchlist' | 'playlist';
 
