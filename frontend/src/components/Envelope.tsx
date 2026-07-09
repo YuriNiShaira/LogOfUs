@@ -49,6 +49,7 @@ const ModernFrame: React.FC<{
   onUploadHover: () => void;
   isUploading?: boolean;
   isUploadingHover?: boolean;
+  isPartner2?: boolean;
 }> = ({ 
   imageUrl, 
   hoverImageUrl, 
@@ -58,7 +59,8 @@ const ModernFrame: React.FC<{
   onUpload, 
   onUploadHover,
   isUploading,
-  isUploadingHover 
+  isUploadingHover,
+  isPartner2 = false
 }) => {
   const [hoverImageError, setHoverImageError] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -69,6 +71,24 @@ const ModernFrame: React.FC<{
   const tilt = side === 'left' ? '-2deg' : '2deg';
   const hasHoverImage = !!hoverImageUrl && hoverImageUrl.trim() !== '' && hoverImageUrl !== primaryImage;
   const showHoverImage = isHovering && hasHoverImage;
+
+  // Different color accents for partner 2
+  const accentColor = isPartner2 ? 'blue' : 'rose';
+  const accentHoverClass = isPartner2 
+    ? 'hover:from-blue-50/90 hover:via-white/90 hover:to-blue-50/90' 
+    : 'hover:from-rose-50/90 hover:via-white/90 hover:to-rose-50/90';
+  const accentRingClass = isPartner2 
+    ? 'focus:ring-blue-400/50' 
+    : 'focus:ring-rose-400/50';
+  const accentBorderClass = isPartner2 
+    ? 'border-blue-200 hover:border-blue-400' 
+    : 'border-rose-200 hover:border-rose-400';
+  const accentTextClass = isPartner2 
+    ? 'text-blue-400 hover:text-blue-600' 
+    : 'text-rose-400 hover:text-rose-600';
+  const accentPulseClass = isPartner2 
+    ? 'bg-blue-400/20' 
+    : 'bg-rose-400/20';
 
   return (
     <motion.div 
@@ -141,26 +161,26 @@ const ModernFrame: React.FC<{
                   e.stopPropagation();
                   onUpload();
                 }}
-                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center z-10 
+                className={`absolute inset-0 w-full h-full flex flex-col items-center justify-center z-10 
                            bg-gradient-to-b from-gray-50/90 via-white/80 to-gray-100/90 backdrop-blur-sm
-                           hover:from-rose-50/90 hover:via-white/90 hover:to-rose-50/90 transition-all duration-500
-                           cursor-pointer group focus:outline-none focus:ring-2 focus:ring-rose-400/50"
+                           ${accentHoverClass} transition-all duration-500
+                           cursor-pointer group focus:outline-none ${accentRingClass}`}
                 aria-label="Upload main photo"
               >
                 {/* Animated pulsing ring */}
                 <div className="relative mb-3">
                   <motion.div 
-                    className="absolute inset-0 rounded-full bg-rose-400/20"
+                    className={`absolute inset-0 rounded-full ${accentPulseClass}`}
                     animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   />
                   <motion.div 
-                    className="absolute inset-0 rounded-full bg-rose-300/30"
+                    className={`absolute inset-0 rounded-full ${isPartner2 ? 'bg-blue-300/30' : 'bg-rose-300/30'}`}
                     animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                   />
-                  <div className="relative h-14 w-14 rounded-full bg-white shadow-lg flex items-center justify-center border-2 border-rose-200 group-hover:border-rose-400 transition-colors duration-300">
-                    <Camera className="h-6 w-6 text-rose-400 group-hover:text-rose-600 group-hover:scale-110 transition-all duration-300" strokeWidth={1.5} />
+                  <div className={`relative h-14 w-14 rounded-full bg-white shadow-lg flex items-center justify-center border-2 ${accentBorderClass} group-hover:border-${isPartner2 ? 'blue' : 'rose'}-400 transition-colors duration-300`}>
+                    <Camera className={`h-6 w-6 ${accentTextClass} group-hover:scale-110 transition-all duration-300`} strokeWidth={1.5} />
                   </div>
                 </div>
                 
@@ -170,7 +190,7 @@ const ModernFrame: React.FC<{
                   animate={{ y: [0, -3, 0] }}
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 >
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-gray-400 group-hover:text-rose-400 transition-colors">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" className={`text-gray-400 group-hover:${isPartner2 ? 'text-blue-400' : 'text-rose-400'} transition-colors`}>
                     <circle cx="12" cy="8" r="4" />
                     <path d="M4 20c0-4 4-7 8-7s8 3 8 7" />
                   </svg>
@@ -178,7 +198,7 @@ const ModernFrame: React.FC<{
 
                 {/* Call to action text */}
                 <div className="text-center px-2">
-                  <p className="text-xs font-serif text-rose-600/70 group-hover:text-rose-700 transition-colors font-medium tracking-wide">
+                  <p className={`text-xs font-serif ${isPartner2 ? 'text-blue-600/70 group-hover:text-blue-700' : 'text-rose-600/70 group-hover:text-rose-700'} transition-colors font-medium tracking-wide`}>
                     Add your photo
                   </p>
                   <p className="text-[9px] text-gray-400/60 group-hover:text-gray-500 mt-1 italic tracking-wide">
@@ -192,7 +212,7 @@ const ModernFrame: React.FC<{
                     animate={{ opacity: [0.3, 0.6, 0.3], rotate: [0, 180, 360] }}
                     transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                   >
-                    <Sparkles className="h-2.5 w-2.5 text-rose-300/50" />
+                    <Sparkles className={`h-2.5 w-2.5 ${isPartner2 ? 'text-blue-300/50' : 'text-rose-300/50'}`} />
                   </motion.div>
                 </div>
                 <div className="absolute bottom-2 right-2">
@@ -241,7 +261,9 @@ const ModernFrame: React.FC<{
                 ? isDark 
                   ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-800' 
                   : 'text-stone-500 hover:text-stone-800 hover:bg-stone-100'
-                : 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm'
+                : isPartner2 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                  : 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm'
               }
             `}
             title="Upload main photo"
@@ -259,8 +281,8 @@ const ModernFrame: React.FC<{
                 ? 'opacity-40 cursor-not-allowed text-stone-400'
                 : hasHoverImage
                   ? isDark 
-                    ? 'text-amber-400 hover:text-amber-300 hover:bg-stone-800' 
-                    : 'text-amber-600 hover:text-amber-800 hover:bg-stone-100'
+                    ? isPartner2 ? 'text-blue-400 hover:text-blue-300 hover:bg-stone-800' : 'text-amber-400 hover:text-amber-300 hover:bg-stone-800'
+                    : isPartner2 ? 'text-blue-600 hover:text-blue-800 hover:bg-stone-100' : 'text-amber-600 hover:text-amber-800 hover:bg-stone-100'
                   : isDark 
                     ? 'text-stone-500 hover:text-stone-300 hover:bg-stone-800' 
                     : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100'
@@ -339,8 +361,12 @@ const Envelope: React.FC = () => {
   }, [loveLetters]);
 
   const isDark = theme === 'dark';
+  
+  // Determine which partner the current user is (1 or 2)
+  const isPartner1 = coupleInfo?.partner1_name === userProfile?.display_name;
+  
   const myName = userProfile?.display_name || user?.display_name || "You";
-  const partnerName = coupleInfo?.partner_name || coupleInfo?.partner1_name || "Partner";
+  const partnerName = coupleInfo?.partner_name || coupleInfo?.partner2_name || "Partner";
   
   const myPhoto = userProfile?.profile_picture || null;
   const myHoverPhoto = userProfile?.hover_profile_picture || null;
@@ -517,15 +543,16 @@ const Envelope: React.FC = () => {
         <div className="hidden md:flex items-center justify-center gap-12 lg:gap-20 w-full max-w-5xl px-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, type: "spring" }}>
             <ModernFrame 
-              imageUrl={myPhoto} 
-              hoverImageUrl={myHoverPhoto}
-              name={myName} 
+              imageUrl={isPartner1 ? myPhoto : partnerPhoto} 
+              hoverImageUrl={isPartner1 ? myHoverPhoto : partnerHoverPhoto}
+              name={isPartner1 ? myName : partnerName} 
               side="left" 
               isDark={isDark} 
               onUpload={() => openUploadModal('main')}
               onUploadHover={() => openUploadModal('hover')}
               isUploading={isUploading}
               isUploadingHover={isUploadingHover}
+              isPartner2={false}
             />
           </motion.div>
 
@@ -640,15 +667,16 @@ const Envelope: React.FC = () => {
 
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, type: "spring", delay: 0.1 }}>
             <ModernFrame 
-              imageUrl={partnerPhoto} 
-              hoverImageUrl={partnerHoverPhoto}
-              name={partnerName} 
+              imageUrl={isPartner1 ? partnerPhoto : myPhoto} 
+              hoverImageUrl={isPartner1 ? partnerHoverPhoto : myHoverPhoto}
+              name={isPartner1 ? partnerName : myName} 
               side="right" 
               isDark={isDark} 
               onUpload={() => openUploadModal('main')}
               onUploadHover={() => openUploadModal('hover')}
               isUploading={isUploading}
               isUploadingHover={isUploadingHover}
+              isPartner2={!isPartner1}
             />
           </motion.div>
         </div>
@@ -657,26 +685,28 @@ const Envelope: React.FC = () => {
         <div className="md:hidden flex flex-col items-center gap-10 w-full px-4">
           <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pt-4">
             <ModernFrame 
-              imageUrl={myPhoto} 
-              hoverImageUrl={myHoverPhoto}
-              name={myName} 
+              imageUrl={isPartner1 ? myPhoto : partnerPhoto} 
+              hoverImageUrl={isPartner1 ? myHoverPhoto : partnerHoverPhoto}
+              name={isPartner1 ? myName : partnerName} 
               side="left" 
               isDark={isDark} 
               onUpload={() => openUploadModal('main')}
               onUploadHover={() => openUploadModal('hover')}
               isUploading={isUploading}
               isUploadingHover={isUploadingHover}
+              isPartner2={false}
             />
             <ModernFrame 
-              imageUrl={partnerPhoto} 
-              hoverImageUrl={partnerHoverPhoto}
-              name={partnerName} 
+              imageUrl={isPartner1 ? partnerPhoto : myPhoto} 
+              hoverImageUrl={isPartner1 ? partnerHoverPhoto : myHoverPhoto}
+              name={isPartner1 ? partnerName : myName} 
               side="right" 
               isDark={isDark} 
               onUpload={() => openUploadModal('main')}
               onUploadHover={() => openUploadModal('hover')}
               isUploading={isUploading}
               isUploadingHover={isUploadingHover}
+              isPartner2={!isPartner1}
             />
           </div>
 
