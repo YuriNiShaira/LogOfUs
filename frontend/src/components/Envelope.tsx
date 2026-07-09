@@ -73,7 +73,6 @@ const ModernFrame: React.FC<{
   const showHoverImage = isHovering && hasHoverImage;
 
   // Different color accents for partner 2
-  const accentColor = isPartner2 ? 'blue' : 'rose';
   const accentHoverClass = isPartner2 
     ? 'hover:from-blue-50/90 hover:via-white/90 hover:to-blue-50/90' 
     : 'hover:from-rose-50/90 hover:via-white/90 hover:to-rose-50/90';
