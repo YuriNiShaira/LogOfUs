@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
   Heart,
 } from 'lucide-react';
@@ -10,7 +9,6 @@ import Navbar from '../components/Navbar';
 import GamesArena from '../components/GamesArena';
 
 const GamesArenaPage: React.FC = () => {
-  const navigate = useNavigate();
   const { theme } = useTheme();
 
   const isDarkMode = theme === 'dark';

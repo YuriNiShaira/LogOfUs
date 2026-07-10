@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
   Star,
   Music,
@@ -30,7 +29,6 @@ const FloatingHearts: React.FC = () => (
 );
 
 const WatchlistPlaylistPage: React.FC = () => {
-  const navigate = useNavigate();
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<TabType>('watchlist');
 
