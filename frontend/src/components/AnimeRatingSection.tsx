@@ -15,7 +15,7 @@ interface AnimeCategory {
   id: number;
   name: string;
   order: number;
-  year: number;
+  year: number | null;
 }
 
 interface AnimeRating {
@@ -33,12 +33,13 @@ interface AnimeRating {
   shaira_favorite_character: string;
   favorite_moment: string;
   notes: string;
-  year: number;
+  year: number | null;
 }
 
 interface AnimeRatingSectionProps {
-  yearId: number;
-  yearNumber: number;
+  yearId?: number;
+  yearNumber?: number;
+  isGlobal?: boolean;
 }
 
 const MEDIA_TYPES = [
@@ -91,7 +92,7 @@ const getMediaTypeIcon = (type: string) => {
   }
 };
 
-const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNumber }) => {
+const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNumber, isGlobal = false }) => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const partnerName = user?.partner_name || 'Partner';
@@ -113,56 +114,103 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
 
   const mediaTypeParam = encodeURIComponent(mediaTypeFilter.trim());
 
+  // Build URL for categories - handle global mode
+  const getCategoriesUrl = () => {
+    if (isGlobal) {
+      return `/anime-categories/?year=all`;
+    }
+    return mediaTypeFilter === 'all'
+      ? `/anime-categories/?year=${yearId}`
+      : `/anime-categories/?year=${yearId}&media_type=${mediaTypeParam}`;
+  };
+
+  // Build URL for anime ratings - handle global mode
+  const getAnimeRatingsUrl = () => {
+    if (isGlobal) {
+      return mediaTypeFilter === 'all' 
+        ? '/anime-ratings/'
+        : `/anime-ratings/?media_type=${mediaTypeParam}`;
+    }
+    return mediaTypeFilter === 'all' 
+      ? `/anime-ratings/?year=${yearId}`
+      : `/anime-ratings/?year=${yearId}&media_type=${mediaTypeParam}`;
+  };
+
   const { data: categories } = useQuery<AnimeCategory[]>({
-    queryKey: ['animeCategories', yearId, mediaTypeFilter],
+    queryKey: ['animeCategories', yearId || 'all', mediaTypeFilter, isGlobal],
     queryFn: async () => {
-      const url = mediaTypeFilter === 'all'
-        ? `/anime-categories/?year=${yearId}`
-        : `/anime-categories/?year=${yearId}&media_type=${mediaTypeParam}`;
+      const url = getCategoriesUrl();
       const response = await api.get(url);
       return Array.isArray(response.data) ? response.data : response.data.results || [];
     },
-    enabled: !!yearId,
+    enabled: true,
   });
 
   const { data: animeList, isLoading } = useQuery<AnimeRating[]>({
-    queryKey: ['animeRatings', yearId, mediaTypeFilter],
+    queryKey: ['animeRatings', yearId || 'all', mediaTypeFilter, isGlobal],
     queryFn: async () => {
-      const url = mediaTypeFilter === 'all' 
-        ? `/anime-ratings/?year=${yearId}`
-        : `/anime-ratings/?year=${yearId}&media_type=${mediaTypeParam}`;
+      const url = getAnimeRatingsUrl();
       console.log('Fetching URL:', url);
       const response = await api.get(url);
       console.log('Response count:', Array.isArray(response.data) ? response.data.length : response.data.results?.length);
       return Array.isArray(response.data) ? response.data : response.data.results || [];
     },
     staleTime: 0,
-    enabled: !!yearId,
+    enabled: true,
   });
 
   const createCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
-      const payload: any = { name, year: yearId, order: 0 };
-      if (mediaTypeFilter !== 'all') {
-        payload.media_type = mediaTypeFilter;
+      const payload: any = { 
+        name, 
+        order: 0,
+        media_type: mediaTypeFilter !== 'all' ? mediaTypeFilter : 'anime'
+      };
+      
+      // Only add year if not global
+      if (!isGlobal && yearId) {
+        payload.year = yearId;
       }
+      
+      console.log('📤 Sending category payload:', payload);
       const response = await api.post('/anime-categories/', payload);
       return response.data;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animeCategories', yearId, mediaTypeFilter] }); toast.success('Category added! 🎯'); setCategoryName(''); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['animeCategories', yearId || 'all', mediaTypeFilter, isGlobal] }); 
+      toast.success('Category added! 🎯'); 
+      setCategoryName(''); 
+    },
+    onError: (error: any) => {
+      console.error('❌ Category error:', error.response?.data);
+      toast.error(error.response?.data?.error || 'Failed to add category');
+    },
   });
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: number) => { await api.delete(`/anime-categories/${id}/`); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animeCategories', yearId, mediaTypeFilter] }); toast.success('Category removed'); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['animeCategories', yearId || 'all', mediaTypeFilter, isGlobal] }); 
+      toast.success('Category removed'); 
+    },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await api.post('/anime-ratings/', { ...data, year: yearId });
+      const payload: any = { ...data };
+      // Only add year if not global
+      if (!isGlobal && yearId) {
+        payload.year = yearId;
+      }
+      const response = await api.post('/anime-ratings/', payload);
       return response.data;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId, mediaTypeFilter] }); toast.success('Added to journal! 📖'); setIsModalOpen(false); resetForm(); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId || 'all', mediaTypeFilter, isGlobal] }); 
+      toast.success('Added to journal! 📖'); 
+      setIsModalOpen(false); 
+      resetForm(); 
+    },
   });
 
   const updateMutation = useMutation({
@@ -170,12 +218,20 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
       const response = await api.put(`/anime-ratings/${id}/`, data);
       return response.data;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId, mediaTypeFilter] }); toast.success('Updated beautifully! ✍️'); setIsModalOpen(false); resetForm(); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId || 'all', mediaTypeFilter, isGlobal] }); 
+      toast.success('Updated beautifully! ✍️'); 
+      setIsModalOpen(false); 
+      resetForm(); 
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => { await api.delete(`/anime-ratings/${id}/`); },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId, mediaTypeFilter] }); toast.success('Page torn out'); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId || 'all', mediaTypeFilter, isGlobal] }); 
+      toast.success('Page torn out'); 
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -217,12 +273,10 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
   const textColor = theme === 'dark' ? 'text-[#e5e0d8]' : 'text-stone-800';
   const subTextColor = theme === 'dark' ? 'text-stone-400' : 'text-stone-500';
   
-  // Paper aesthetics with organic, soft shadows
   const cardBg = theme === 'dark' 
     ? 'bg-[#2a2626] border-stone-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.25)]' 
     : 'bg-[#fcfbf7] border-stone-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.06)]';
   
-  // Fill-in-the-blank style inputs with clear focus states
   const diaryInputStyle = `w-full bg-transparent border-0 border-b-2 border-dashed rounded-none px-2 py-2 focus:ring-0 transition-colors focus:outline-none ${
     theme === 'dark' 
       ? 'border-stone-600 focus:border-rose-400/80 text-stone-200 placeholder-stone-600' 
@@ -231,6 +285,11 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
 
   const modalBg = theme === 'dark' ? 'bg-[#221f1f] border-stone-700' : 'bg-[#f9f8f4] border-stone-200';
   const headerBg = theme === 'dark' ? 'bg-[#242121] border-stone-700' : 'bg-[#f4f1ea] border-stone-200';
+
+  const headerTitle = isGlobal ? 'Our Watchlist' : `Chapter ${yearNumber}`;
+  const headerSubtitle = isGlobal 
+    ? 'All our shared stories & memories...' 
+    : `Our shared stories & memories... (${animeList?.length || 0} entries)`;
 
   return (
     <div className="space-y-8 pb-12 px-2 md:px-0 max-w-7xl mx-auto">
@@ -258,15 +317,15 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
       {/* Header - Journal Cover Style */}
       <div className={`flex flex-col md:flex-row items-start md:items-end justify-between gap-6 p-6 md:p-8 rounded-xl shadow-sm border-b-4 ${headerBg}`}>
         <div>
-          <h2 className={`text-4xl md:text-5xl font-serif font-bold italic ${textColor}`}>Chapter {yearNumber}</h2>
-          <p className={`mt-2 font-serif text-lg ${subTextColor}`}>Our shared stories & memories... ({animeList?.length || 0} entries)</p>
+          <h2 className={`text-4xl md:text-5xl font-serif font-bold italic ${textColor}`}>{headerTitle}</h2>
+          <p className={`mt-2 font-serif text-lg ${subTextColor}`}>{headerSubtitle}</p>
         </div>
         <div className="flex flex-wrap w-full md:w-auto gap-3">
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setIsCategoryModalOpen(true)}
             className={`flex-1 md:flex-none px-5 py-3 font-serif font-medium border transition-all flex items-center justify-center gap-2 rounded-lg shadow-sm ${
               theme === 'dark' ? 'bg-stone-800 text-stone-300 border-stone-600 hover:bg-stone-700' : 'bg-[#fffdfa] text-stone-600 border-stone-300 hover:text-rose-700 hover:bg-rose-50/50'
             }`}>
-            <Settings className="w-4 h-4" /> Setup Pages
+            <Settings className="w-4 h-4" /> Add Criteria
           </motion.button>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { resetForm(); setIsModalOpen(true); }}
             className="flex-1 md:flex-none px-6 py-3 bg-rose-700 hover:bg-rose-800 text-[#fdfbf7] font-serif font-semibold shadow-md hover:shadow-lg flex items-center justify-center gap-2 rounded-lg transition-all">
@@ -342,7 +401,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
           className={`flex flex-col items-center justify-center py-24 px-4 text-center rounded-xl border-2 border-dashed ${theme === 'dark' ? 'border-stone-700 bg-stone-800/20' : 'border-stone-300 bg-stone-50/50'}`}>
           <BookOpen className={`w-16 h-16 mb-4 ${theme === 'dark' ? 'text-stone-600' : 'text-stone-300'}`} />
           <h3 className={`text-2xl font-serif italic mb-2 ${textColor}`}>The pages are empty...</h3>
-          <p className={`${subTextColor} font-serif max-w-sm`}>Click the "Write Entry" button to start filling this chapter of your journal.</p>
+          <p className={`${subTextColor} font-serif max-w-sm`}>Click the "Write Entry" button to start filling your journal.</p>
         </motion.div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 pt-6 pb-12">
@@ -351,13 +410,13 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
               <motion.div key={anime.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                 className={`relative rounded-xl p-6 md:p-8 transition-all hover:-translate-y-1 ${cardBg} group`}>
                 
-                {/* Washi Tape detail - Alternating organic rotation */}
+                {/* Washi Tape detail */}
                 <div className={`absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-6 opacity-90 backdrop-blur-md z-10 shadow-[0_1px_3px_rgba(0,0,0,0.05)]
                   ${theme === 'dark' ? 'bg-stone-600/60' : 'bg-pink-200/80'} 
                   ${index % 2 === 0 ? '-rotate-2' : 'rotate-2'}`} 
                 />
 
-                {/* Action Buttons (Absolute Top Right) */}
+                {/* Action Buttons */}
                 <div className="absolute top-6 right-6 flex flex-col gap-2 z-20">
                   <button onClick={() => setExpandedAnime(expandedAnime === anime.id ? null : anime.id)}
                     className={`w-9 h-9 rounded-full border border-dashed flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-rose-400/50 ${theme === 'dark' ? 'border-stone-600 text-stone-400 hover:text-rose-400 hover:border-rose-400 bg-stone-800/80' : 'border-stone-300 text-stone-400 hover:text-rose-500 hover:border-rose-300 bg-white'}`}>
@@ -370,7 +429,6 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
                 </div>
 
                 <div className="flex flex-col mb-5">
-                  {/* Header Row */}
                   <div className="flex items-center gap-3 mb-4 pr-12 flex-wrap">
                     <span className={`${theme === 'dark' ? 'text-stone-400' : 'text-stone-500'}`} title={`Format: ${anime.media_type}`}>
                       {getMediaTypeIcon(anime.media_type || 'anime')}
@@ -388,7 +446,6 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
                     )}
                   </div>
                   
-                  {/* Scores - Dashed Bento Box */}
                   <div className={`self-start inline-flex items-center rounded-lg px-1 py-1 border border-dashed ${theme === 'dark' ? 'border-stone-600 bg-stone-800/40' : 'border-stone-300 bg-white/50'}`}>
                     <div className="flex items-center gap-1.5 px-3 py-1">
                       <User className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-rose-400' : 'text-[#f96a7b]'}`} />
@@ -407,7 +464,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
                   </div>
                 </div>
 
-                {/* Fav Characters Snippet - Ruled Paper Effect */}
+                {/* Fav Characters Snippet */}
                 {(anime.my_favorite_character || anime.shaira_favorite_character) && (
                   <div className="flex flex-col gap-3 mt-6">
                     {anime.my_favorite_character && (
@@ -441,7 +498,6 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
                           ))}
                         </div>
                         
-                        {/* Notes section - Handwriting lined paper effect */}
                         {(anime.favorite_moment || anime.notes) && (
                           <div className={`p-6 md:p-8 journal-lines shadow-inner rounded-md ${theme === 'dark' ? 'bg-[#332e2e]' : 'bg-[#fffdfa]'}`}>
                             {anime.favorite_moment && (
@@ -474,7 +530,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
         </div>
       )}
 
-      {/* 📖 Add/Edit Entry Modal - Notebook Spread Design */}
+      {/* 📖 Add/Edit Entry Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -485,7 +541,6 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
               style={{ borderRadius: '4px 16px 16px 4px' }}
               onClick={(e) => e.stopPropagation()}>
               
-              {/* Book spine decoration - refined with stronger gradient */}
               <div className={`absolute top-0 bottom-0 left-0 w-8 md:w-12 border-r-2 shadow-inner ${theme === 'dark' ? 'bg-linear-to-r from-[#111] to-[#1a1717] border-stone-800' : 'bg-linear-to-r from-[#d3cbb5] to-[#e5dfce] border-[#d3cbb5]'}`} />
               
               <div className="pl-14 md:pl-20 pr-6 md:pr-10 py-8 md:py-10">
@@ -632,6 +687,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
           </motion.div>
         )}
       </AnimatePresence>
+      
       <style dangerouslySetInnerHTML={{__html: `
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
