@@ -5,12 +5,12 @@ import {
   Star,
   Music,
   Heart,
-  Construction,
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import RomanticBackground from '../components/RomanticBackground';
 import Navbar from '../components/Navbar';
 import PlaylistSection from '../components/PlaylistSection';
+import AnimeRatingSection from '../components/AnimeRatingSection';
 
 type TabType = 'watchlist' | 'playlist';
 
@@ -27,71 +27,6 @@ const FloatingHearts: React.FC = () => (
       </motion.div>
     ))}
   </div>
-);
-
-// Maintenance Notice Component
-const MaintenanceNotice: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="flex flex-col items-center justify-center py-16 px-4 text-center"
-  >
-    <div className={`relative p-8 rounded-2xl max-w-md w-full ${
-      isDarkMode ? 'bg-stone-800/60' : 'bg-white/60'
-    } backdrop-blur-sm border ${
-      isDarkMode ? 'border-amber-700/30' : 'border-amber-200/50'
-    }`}>
-      {/* Construction Icon with Animation */}
-      <motion.div
-        animate={{ 
-          rotate: [0, -5, 5, -5, 0],
-          scale: [1, 1.05, 1, 1.05, 1]
-        }}
-        transition={{ duration: 3, repeat: Infinity }}
-        className="flex justify-center mb-4"
-      >
-        <div className={`p-4 rounded-full ${
-          isDarkMode ? 'bg-amber-900/30' : 'bg-amber-100/50'
-        }`}>
-          <Construction className="w-12 h-12 text-amber-500" />
-        </div>
-      </motion.div>
-
-      <h2 className={`text-2xl font-serif font-bold mb-3 ${
-        isDarkMode ? 'text-amber-200' : 'text-amber-800'
-      }`}>
-        Under Maintenance 🔧
-      </h2>
-      
-      <p className={`font-serif text-base mb-4 ${
-        isDarkMode ? 'text-stone-300' : 'text-stone-600'
-      }`}>
-        We're working on making your watchlist experience even better!
-      </p>
-      
-      <div className={`h-px w-20 mx-auto my-4 bg-gradient-to-r from-transparent via-amber-400/50 to-transparent`} />
-      
-      <p className={`text-sm font-serif italic ${
-        isDarkMode ? 'text-stone-400' : 'text-stone-500'
-      }`}>
-        ✨ Meanwhile, check out the playlist section!
-      </p>
-
-      {/* Decorative dots */}
-      <div className="flex justify-center gap-2 mt-4">
-        {[...Array(3)].map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{ scale: [1, 1.3, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4 }}
-            className={`w-2 h-2 rounded-full ${
-              isDarkMode ? 'bg-amber-500/40' : 'bg-amber-400/40'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  </motion.div>
 );
 
 const WatchlistPlaylistPage: React.FC = () => {
@@ -128,18 +63,6 @@ const WatchlistPlaylistPage: React.FC = () => {
                 All the shows you love and songs that remind you of each other
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className={`px-4 py-2 rounded-lg border font-serif text-sm transition-all ${
-                  isDarkMode
-                    ? 'border-rose-800/50 text-rose-300 hover:bg-rose-900/30'
-                    : 'border-rose-200 text-rose-600 hover:bg-rose-50'
-                }`}
-              >
-                Back to Home
-              </button>
-            </div>
           </div>
           <div className={`mt-4 h-px w-full bg-gradient-to-r from-transparent via-rose-300/50 to-transparent`} />
         </motion.div>
@@ -173,13 +96,6 @@ const WatchlistPlaylistPage: React.FC = () => {
                 >
                   <Icon className="w-4 h-4" />
                   <span>{tab.label}</span>
-                  {tab.id === 'watchlist' && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                      isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      🚧
-                    </span>
-                  )}
                 </motion.button>
               );
             })}
@@ -195,14 +111,9 @@ const WatchlistPlaylistPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              {/* Maintenance Notice - replacing the actual content */}
-              <MaintenanceNotice isDarkMode={isDarkMode} />
-              
-              {/* Original AnimeRatingSection is commented out but kept for when maintenance is done */}
-              {/* <AnimeRatingSection 
-                yearId={0} 
-                yearNumber={0} 
-              /> */}
+              <AnimeRatingSection 
+                isGlobal={true}
+              />
             </motion.div>
           )}
 
