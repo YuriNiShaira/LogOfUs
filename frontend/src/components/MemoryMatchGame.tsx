@@ -69,7 +69,7 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
   const [gameWinner, setGameWinner] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
 
-  // ✅ Fetch memories (optionally by year, or all if no year)
+  // Fetch memories (optionally by year, or all if no year)
   const { data: memories, isLoading } = useQuery<Memory[]>({
     queryKey: ['memoriesWithImages', yearId || 'all'],
     queryFn: async () => {
@@ -100,7 +100,10 @@ const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
       toast("It's a tie! 🤝");
     }
 
-    if (winner !== 'tie') onWin(winner);
+    // Only call onWin if there's a winner (not a tie)
+    if (winner !== 'tie') {
+      onWin(winner);
+    }
   };
 
   const initializeGame = () => {
