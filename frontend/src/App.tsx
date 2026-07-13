@@ -1,4 +1,5 @@
-import React from 'react';
+// frontend/src/App.tsx
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -10,8 +11,6 @@ import Dashboard from './pages/Dashboard';
 import YearDetailPage from './pages/YearDetailPage';
 import BucketListPage from './pages/BucketListPage';
 import MemoryCalendarPage from './pages/MemoryCalendarPage';
-import WatchlistPlaylistPage from './pages/WatchlistPlaylistPage';
-import GamesArenaPage from './pages/GamesArenaPage';
 import ContactPage from './pages/ContactPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -20,7 +19,15 @@ import SupportButton from './components/SupportButton';
 import './index.css';
 import NotFoundPage from './pages/NotFoundPage';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -33,12 +40,68 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 };
 
 function App() {
+  useEffect(() => {
+    // Detect if device is low performance and add classes to body
+    const checkPerformance = () => {
+      const isMobile = window.innerWidth < 768;
+      
+      // Check for low-end devices
+      let isLowMemory = false;
+      try {
+        const memory = (performance as any).memory;
+        if (memory && memory.jsHeapSizeLimit < 2 * 1024 * 1024 * 1024) {
+          isLowMemory = true;
+        }
+      } catch (e) {
+        // Memory API not available
+      }
+      
+      if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) {
+        isLowMemory = true;
+      }
+      
+      if (isMobile || isLowMemory) {
+        document.body.classList.add('reduce-motion');
+        document.body.classList.add('reduce-effects');
+        
+        // Also reduce Framer Motion animations via CSS
+        document.body.style.setProperty('--animation-duration', '0.01ms');
+      } else {
+        document.body.classList.remove('reduce-motion');
+        document.body.classList.remove('reduce-effects');
+      }
+    };
+    
+    checkPerformance();
+    
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        document.body.classList.add('reduce-motion');
+        document.body.classList.add('reduce-effects');
+      } else {
+        document.body.classList.remove('reduce-motion');
+        // Only remove reduce-effects if not low memory
+        try {
+          const memory = (performance as any).memory;
+          if (!memory || memory.jsHeapSizeLimit >= 2 * 1024 * 1024 * 1024) {
+            document.body.classList.remove('reduce-effects');
+          }
+        } catch (e) {
+          document.body.classList.remove('reduce-effects');
+        }
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider> 
         <AuthProvider>
           <Router>
-            <div className="relative min-h-screen">
+            <div className="relative min-h-screen gpu-accelerated">
               <RomanticBackground />
               <div className="relative z-10">
                 <Toaster 
@@ -75,16 +138,6 @@ function App() {
                   <Route path="/calendar" element={
                     <PrivateRoute>
                       <MemoryCalendarPage />
-                    </PrivateRoute>
-                  } />
-                  <Route path="/watchlist-playlist" element={
-                    <PrivateRoute>
-                      <WatchlistPlaylistPage />
-                    </PrivateRoute>
-                  } />
-                  <Route path="/games" element={
-                    <PrivateRoute>
-                      <GamesArenaPage />
                     </PrivateRoute>
                   } />
                   <Route path="*" element={<NotFoundPage />} />

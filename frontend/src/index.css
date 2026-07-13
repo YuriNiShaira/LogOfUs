@@ -1,3 +1,5 @@
+/* frontend/src/index.css */
+
 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
@@ -269,6 +271,124 @@
 
 .font-handwriting {
   font-family: 'Caveat', cursive;
+}
+
+/* ===========================================
+   PREVENT FLICKERING & OPTIMIZE PERFORMANCE
+   =========================================== */
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+/* GPU acceleration for smoother animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Prevent white flash on load */
+#root {
+  background: #fdfbf7;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Dark mode flash prevention */
+.dark #root {
+  background: #1a1a1a;
+}
+
+/* Reduce animations on mobile - applied via JavaScript */
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+.reduce-motion .animate-pulse,
+.reduce-motion .animate-spin,
+.reduce-motion .animate-bounce,
+.reduce-motion .animate-ping {
+  animation: none !important;
+}
+
+/* Disable backdrop-blur on mobile for performance */
+.reduce-effects .backdrop-blur-sm,
+.reduce-effects .backdrop-blur-md,
+.reduce-effects .backdrop-blur-lg {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.reduce-effects.dark .backdrop-blur-sm,
+.reduce-effects.dark .backdrop-blur-md,
+.reduce-effects.dark .backdrop-blur-lg {
+  background: rgba(26, 26, 26, 0.95) !important;
+}
+
+/* Reduce blur on all devices */
+.blur-2xl, .blur-3xl {
+  will-change: auto;
+}
+
+/* Prevent layout thrashing */
+.no-layout-thrash {
+  will-change: transform, opacity;
+}
+
+/* Smooth scrolling but prevent flicker */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Disable heavy filters */
+  .filter,
+  .backdrop-filter {
+    filter: none !important;
+    backdrop-filter: none !important;
+  }
+  
+  /* Reduce shadow complexity */
+  .shadow-2xl,
+  .shadow-xl {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  }
+  
+  /* Optimize animations */
+  .transition-all {
+    transition-property: opacity, transform !important;
+    transition-duration: 0.15s !important;
+  }
+  
+  /* Prevent overflow causing scroll issues */
+  .overflow-hidden {
+    overflow: hidden !important;
+  }
+}
+
+/* Custom scrollbar - desktop only */
+@media (min-width: 769px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(139, 117, 91, 0.2);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 117, 91, 0.4);
+  }
 }
 
 /* ===========================================
