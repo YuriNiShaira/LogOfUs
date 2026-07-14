@@ -17,7 +17,6 @@ import {
   Cloud,
   Sun,
   Snowflake,
-  Cat,
   Moon,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
