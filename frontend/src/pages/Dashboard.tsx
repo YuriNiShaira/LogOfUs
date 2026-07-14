@@ -20,6 +20,7 @@ import YearCard from '../components/YearCard';
 import StatsCard from '../components/StatsCard';
 import CreateYearModal from '../components/CreateYearModal';
 import RomanticBackground from '../components/RomanticBackground';
+import CatsBackground from '../components/backgrounds/CatsBackground';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -97,6 +98,7 @@ const Dashboard: React.FC = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [enableCats, setEnableCats] = useState(true);
 
   // OPTIMIZATION: Use cachedGet for faster loading
   const { data: yearsData, isLoading } = useQuery({
@@ -150,6 +152,28 @@ const Dashboard: React.FC = () => {
       }
     }
   }, [user]);
+
+  // Load cats setting
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('user_settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        setEnableCats(settings.enableCats !== undefined ? settings.enableCats : true);
+      } catch (e) {}
+    }
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user_settings') {
+        try {
+          const settings = JSON.parse(e.newValue || '{}');
+          setEnableCats(settings.enableCats !== undefined ? settings.enableCats : true);
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     if (!user?.has_partner) {
@@ -219,6 +243,10 @@ const Dashboard: React.FC = () => {
       `}} />
 
       <RomanticBackground />
+      
+      {/* Cats overlay - only on dashboard and if enabled */}
+      {enableCats && <CatsBackground />}
+
       <Navbar />
 
       <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 py-4 sm:py-6">
