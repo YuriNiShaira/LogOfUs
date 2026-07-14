@@ -406,27 +406,33 @@ const MemoryDetailModal: React.FC<MemoryDetailModalProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
           onClick={onClose}
         >
+          {/* Added force-light-theme here to prevent global CSS from making text gray */}
           <motion.div
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            className="relative w-full max-w-5xl max-h-[95vh]"
+            className="relative w-full max-w-5xl max-h-[95vh] force-light-theme"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Removed dark:bg-gray-800 dark:text-gray-200 */}
             <button
               onClick={onClose}
-              className="absolute -right-3 -top-3 z-50 rounded-full bg-white p-2.5 text-gray-800 shadow-2xl transition-all hover:scale-110 hover:text-rose-600 dark:bg-gray-800 dark:text-gray-200 md:-right-4 md:-top-4"
+              className="absolute -right-3 -top-3 z-50 rounded-full bg-white p-2.5 text-gray-800 shadow-2xl transition-all hover:scale-110 hover:text-rose-600 md:-right-4 md:-top-4"
             >
               <X className="h-4 w-4 md:h-5 md:w-5" />
             </button>
 
             {/* DESKTOP VIEW */}
             <div className="hidden md:block">
-              <div className="relative overflow-visible rounded-xl bg-[#2C292A] p-2 pb-3 pr-3 shadow-[0_40px_80px_rgba(0,0,0,0.6)] dark:bg-[#1A1819]">
-                <div className="absolute bottom-1 left-2 right-2 top-2 rounded border border-[#E5E0D8]/50 bg-[#E5E0D8] dark:border-gray-700/50 dark:bg-gray-800" />
-                <div className="absolute bottom-2 left-2 right-2 top-2 rounded border border-[#F0ECE1]/50 bg-[#F0ECE1] dark:border-gray-700/50 dark:bg-gray-700" />
+              {/* Removed dark:bg-[#1A1819] */}
+              <div className="relative overflow-visible rounded-xl bg-[#2C292A] p-2 pb-3 pr-3 shadow-[0_40px_80px_rgba(0,0,0,0.6)]">
+                {/* Removed dark:border-gray-700/50 dark:bg-gray-800 */}
+                <div className="absolute bottom-1 left-2 right-2 top-2 rounded border border-[#E5E0D8]/50 bg-[#E5E0D8]" />
+                {/* Removed dark:border-gray-700/50 dark:bg-gray-700 */}
+                <div className="absolute bottom-2 left-2 right-2 top-2 rounded border border-[#F0ECE1]/50 bg-[#F0ECE1]" />
 
-                <div className="relative flex w-full bg-[#FDFBF7] dark:bg-[#FDFBF7] rounded min-h-125 md:min-h-150" style={{ perspective: "2500px" }}>
+                {/* Removed dark:bg-[#FDFBF7] */}
+                <div className="relative flex w-full bg-[#FDFBF7] rounded min-h-125 md:min-h-150" style={{ perspective: "2500px" }}>
                   
                   <div className="pointer-events-none absolute bottom-0 left-1/2 top-0 hidden w-12 -translate-x-1/2 bg-linear-to-r from-[rgba(0,0,0,0.02)] via-[rgba(0,0,0,0.15)] to-[rgba(0,0,0,0.02)] md:block z-40" />
                   <div className="absolute left-1/2 top-0 hidden h-full w-4 -translate-x-1/2 bg-linear-to-r from-[#d9d5ce] via-[#fdfbf7] to-[#d9d5ce] md:block z-0" />
