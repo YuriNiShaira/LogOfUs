@@ -54,7 +54,7 @@ const SettingsDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const { user, logout } = useAuth();
-  const { theme, } = useTheme();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,11 +180,13 @@ const SettingsDropdown: React.FC = () => {
     setCurrentBackground(bgTheme);
     localStorage.setItem('backgroundTheme', bgTheme);
     
+    // Dispatch storage event
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'backgroundTheme',
       newValue: bgTheme
     }));
     
+    // Dispatch custom event
     window.dispatchEvent(new CustomEvent('backgroundThemeChange', {
       detail: { theme: bgTheme }
     }));
@@ -677,7 +679,7 @@ const SettingsDropdown: React.FC = () => {
                       </form>
                     )}
 
-                    {/* Preferences Tab - with Cats toggle */}
+                    {/* Preferences Tab */}
                     {activeTab === 'preferences' && (
                       <div className="space-y-6">
                         <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">

@@ -8,17 +8,21 @@ interface RomanticBackgroundProps {
 }
 
 const RomanticBackground: React.FC<RomanticBackgroundProps> = ({ theme = 'cherry-blossom' }) => {
-  const { theme: appTheme } = useTheme();
+  const { theme: appTheme, setTheme } = useTheme(); 
   const [currentTheme, setCurrentTheme] = useState<BackgroundTheme>(theme);
   const [enablePetals, setEnablePetals] = useState(true);
 
-  // Load saved theme and settings
+  // Load saved theme from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem('backgroundTheme') as BackgroundTheme;
     if (savedTheme) {
       setCurrentTheme(savedTheme);
+      if (savedTheme === 'starry-night') {
+        setTheme('dark');
+      } else {
+        setTheme('light');
+      }
     }
-
     const savedSettings = localStorage.getItem('user_settings');
     if (savedSettings) {
       try {
@@ -28,9 +32,20 @@ const RomanticBackground: React.FC<RomanticBackgroundProps> = ({ theme = 'cherry
     }
   }, []);
 
-  // Listen for settings changes (only petals now)
+  // Listen for storage changes (background theme, petals)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'backgroundTheme') {
+        const newTheme = e.newValue as BackgroundTheme;
+        if (newTheme) {
+          setCurrentTheme(newTheme);
+          if (newTheme === 'starry-night') {
+            setTheme('dark');
+          } else {
+            setTheme('light');
+          }
+        }
+      }
       if (e.key === 'user_settings') {
         try {
           const settings = JSON.parse(e.newValue || '{}');
@@ -42,18 +57,23 @@ const RomanticBackground: React.FC<RomanticBackgroundProps> = ({ theme = 'cherry
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Listen for custom event for background theme
+  // Listen for custom event (from SettingsDropdown)
   useEffect(() => {
     const handleCustomEvent = (e: CustomEvent) => {
       if (e.detail?.theme) {
         setCurrentTheme(e.detail.theme);
+        if (e.detail.theme === 'starry-night') {
+          setTheme('dark');
+        } else {
+          setTheme('light');
+        }
       }
     };
     window.addEventListener('backgroundThemeChange', handleCustomEvent as EventListener);
     return () => window.removeEventListener('backgroundThemeChange', handleCustomEvent as EventListener);
   }, []);
 
-  const isDark = appTheme === 'dark';
+  const isDark = appTheme === 'dark'; 
 
   return (
     <BackgroundContainer 

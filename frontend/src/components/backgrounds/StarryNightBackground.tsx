@@ -1,9 +1,11 @@
-// src/components/backgrounds/StarryNightBackground.tsx
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { BackgroundProps } from './types';
 
 const StarryNightBackground: React.FC<BackgroundProps> = () => {
+  // 🔍 Debug: Log when this component renders
+  console.log('🌙 StarryNightBackground is rendering!');
+
   const stars = useMemo(() => 
     Array.from({ length: 30 }, (_, i) => ({
       id: `star-${i}`,
@@ -18,7 +20,10 @@ const StarryNightBackground: React.FC<BackgroundProps> = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, #0d0a1a 0%, #1a1030 30%, #2d1a30 60%, #1a1020 100%)' }} />
+      <div className="absolute inset-0" style={{ 
+        background: 'linear-gradient(180deg, #0d0a1a 0%, #1a1030 30%, #2d1a30 60%, #1a1020 100%)',
+        backgroundAttachment: 'fixed',
+      }} />
 
       {stars.map((star) => (
         <motion.div

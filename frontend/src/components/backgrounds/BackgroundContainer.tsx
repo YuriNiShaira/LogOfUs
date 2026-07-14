@@ -6,7 +6,6 @@ import RainyDayBackground from './RainyDayBackground';
 import CloudyBackground from './CloudyBackground';
 import SunnyBackground from './SunnyBackground';
 import SnowyBackground from './SnowyBackground';
-import CatsBackground from './CatsBackground';
 
 interface BackgroundContainerProps {
   theme?: BackgroundTheme;
@@ -19,25 +18,27 @@ const BackgroundContainer: React.FC<BackgroundContainerProps> = ({
   isDark, 
   enablePetals = true 
 }) => {
+  // 🔍 Debug: Log when component renders
+  console.log('🔍 BackgroundContainer render:', { isDark, theme, returning: isDark ? 'StarryNight' : theme });
+
   const props: BackgroundProps = { theme, isDark, enablePetals };
 
-  // If dark mode is ON, ALWAYS show Starry Night
   if (isDark) {
+    console.log('🌙 Dark mode ON - showing StarryNight');
     return <StarryNightBackground {...props} />;
   }
 
-  // In light mode, show the selected theme
-  const backgrounds: Record<BackgroundTheme, React.ReactElement> = {
+  // In light mode, show the selected theme (excluding cats)
+  const backgrounds: Record<Exclude<BackgroundTheme, 'cats'>, React.ReactElement> = {
     'cherry-blossom': <CherryBlossomBackground {...props} />,
     'starry-night': <StarryNightBackground {...props} />,
     'rainy-day': <RainyDayBackground {...props} />,
     'cloudy': <CloudyBackground {...props} />,
     'sunny': <SunnyBackground {...props} />,
     'snowy': <SnowyBackground {...props} />,
-    'cats': <CatsBackground {...props} />,
   };
 
-  return backgrounds[theme] || backgrounds['cherry-blossom'];
+  return backgrounds[theme as Exclude<BackgroundTheme, 'cats'>] || backgrounds['cherry-blossom'];
 };
 
 export default BackgroundContainer;
