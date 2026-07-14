@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -10,13 +10,22 @@ import {
   X,
   Star,
   Gamepad2,
+  Palette,
+  Check,
+  Flower2,
+  CloudRain,
+  Cloud,
+  Sun,
+  Snowflake,
+  Cat,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
-import ThemeToggle from './ThemeToggle';
 import SettingsDropdown from './SettingsDropdown';
+import type { BackgroundTheme } from './backgrounds/types';
 
 interface NavItem {
   icon: React.ElementType;
@@ -30,6 +39,8 @@ const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const { theme } = useTheme();
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [showBackgroundMenu, setShowBackgroundMenu] = useState(false);
+  const [currentBackground, setCurrentBackground] = useState<BackgroundTheme>('cherry-blossom');
 
   const navItems: NavItem[] = [
     { icon: Home, label: 'Home', path: '/dashboard' },
@@ -38,6 +49,14 @@ const Navbar: React.FC = () => {
     { icon: Star, label: 'Playlist', path: '/watchlist-playlist' },
     { icon: Gamepad2, label: 'Games', path: '/games' },
   ];
+
+  // Load saved background theme
+  useEffect(() => {
+    const saved = localStorage.getItem('backgroundTheme') as BackgroundTheme;
+    if (saved) {
+      setCurrentBackground(saved);
+    }
+  }, []);
 
   const handleLogout = async () => {
     const refreshToken = localStorage.getItem('refreshToken');
@@ -56,6 +75,36 @@ const Navbar: React.FC = () => {
   };
 
   const isDark = theme === 'dark';
+
+  const backgroundThemes = [
+    { id: 'cherry-blossom' as BackgroundTheme, label: 'Cherry Blossom', icon: Flower2 },
+    { id: 'starry-night' as BackgroundTheme, label: 'Starry Night', icon: Moon },
+    { id: 'rainy-day' as BackgroundTheme, label: 'Rainy Day', icon: CloudRain },
+    { id: 'cloudy' as BackgroundTheme, label: 'Cloudy', icon: Cloud },  
+    { id: 'sunny' as BackgroundTheme, label: 'Sunny', icon: Sun },
+    { id: 'snowy' as BackgroundTheme, label: 'Snowy', icon: Snowflake },
+  ];
+
+  const handleBackgroundChange = (bgTheme: BackgroundTheme) => {
+    setCurrentBackground(bgTheme);
+    localStorage.setItem('backgroundTheme', bgTheme);
+    
+    // Dispatch storage event for same window (some browsers don't trigger storage on same window)
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'backgroundTheme',
+      newValue: bgTheme
+    }));
+    
+    // Dispatch custom event for more reliable same-window updates
+    window.dispatchEvent(new CustomEvent('backgroundThemeChange', {
+      detail: { theme: bgTheme }
+    }));
+    
+    setShowBackgroundMenu(false);
+    console.log('Background changed to:', bgTheme);
+  };
+
+  const currentBgLabel = backgroundThemes.find(t => t.id === currentBackground)?.label || 'Cherry Blossom';
 
   return (
     <>
@@ -214,6 +263,10 @@ const Navbar: React.FC = () => {
         .nav-icon-glow:hover {
           filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.3));
         }
+
+        .bg-menu-item-hover {
+          transition: all 0.2s ease;
+        }
       `}</style>
 
       <motion.nav
@@ -289,8 +342,58 @@ const Navbar: React.FC = () => {
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
+            {/* Background Theme Selector */}
+            <div className="relative hidden md:block">
+              <motion.button
+                whileHover={{ scale: 1.06, y: -2 }}
+                whileTap={{ scale: 0.94 }}
+                onClick={() => setShowBackgroundMenu(!showBackgroundMenu)}
+                className={`nav-item-hover flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-semibold tracking-wide ${
+                  isDark
+                    ? 'text-amber-200/75 hover:bg-amber-900/40 hover:text-amber-100'
+                    : 'text-amber-800/75 hover:bg-amber-100/50 hover:text-amber-900'
+                }`}
+                title="Change Background"
+              >
+                <Palette className="w-4 h-4" />
+                <span className="hidden lg:inline">{currentBgLabel}</span>
+              </motion.button>
+
+              <AnimatePresence>
+                {showBackgroundMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className={`absolute right-0 mt-2 p-2 rounded-lg shadow-xl min-w-[200px] z-50 ${
+                      isDark ? 'bg-stone-800 border border-stone-700' : 'bg-white border border-stone-200'
+                    }`}
+                  >
+                    {backgroundThemes.map((bgTheme) => {
+                      const Icon = bgTheme.icon;
+                      const isActive = currentBackground === bgTheme.id;
+                      return (
+                        <button
+                          key={bgTheme.id}
+                          onClick={() => handleBackgroundChange(bgTheme.id)}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                            isActive
+                              ? isDark ? 'bg-rose-900/50 text-rose-300' : 'bg-rose-100 text-rose-700'
+                              : isDark ? 'hover:bg-stone-700 text-stone-300' : 'hover:bg-stone-100 text-stone-700'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className="flex-1 text-sm font-serif text-left">{bgTheme.label}</span>
+                          {isActive && <Check size={16} className="text-rose-500" />}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <SettingsDropdown />
-            <ThemeToggle />
             
             {/* Mobile menu button */}
             <motion.button
@@ -379,6 +482,39 @@ const Navbar: React.FC = () => {
                     </motion.button>
                   );
                 })}
+
+                {/* Mobile Background Theme Selector */}
+                <div className={`my-2 page-divider ${isDark ? 'text-amber-700' : 'text-amber-300'}`} />
+                
+                <div className="px-2 py-1">
+                  <p className={`text-xs font-serif uppercase tracking-wider mb-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                    Background Theme
+                  </p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {backgroundThemes.map((bgTheme) => {
+                      const Icon = bgTheme.icon;
+                      const isActive = currentBackground === bgTheme.id;
+                      return (
+                        <button
+                          key={bgTheme.id}
+                          onClick={() => {
+                            handleBackgroundChange(bgTheme.id);
+                            setIsNavOpen(false);
+                          }}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
+                            isActive
+                              ? isDark ? 'bg-rose-900/50 text-rose-300' : 'bg-rose-100 text-rose-700'
+                              : isDark ? 'hover:bg-stone-700 text-stone-300' : 'hover:bg-stone-100 text-stone-700'
+                          }`}
+                        >
+                          <Icon className="w-3 h-3" />
+                          <span className="flex-1 text-left text-xs truncate">{bgTheme.label}</span>
+                          {isActive && <Check size={12} className="text-rose-500 flex-shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 <div className={`my-2 page-divider ${isDark ? 'text-amber-700' : 'text-amber-300'}`} />
 
