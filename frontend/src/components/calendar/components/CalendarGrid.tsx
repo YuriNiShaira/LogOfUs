@@ -41,7 +41,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
       <div className="flex items-center justify-between gap-2 mb-6 md:mb-8">
         <button 
           onClick={onPrevMonth} 
-          className={`font-handwriting text-lg sm:text-xl md:text-2xl transition-colors hover:text-rose-500 z-10 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}
+          className={`font-handwriting text-lg sm:text-xl md:text-2xl transition-colors hover:text-rose-500 z-10 ${isDark ? 'text-stone-400! hover:text-rose-400!' : 'text-stone-500'}`}
         >
           ← Prev
         </button>
@@ -65,7 +65,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         
         <button 
           onClick={onNextMonth} 
-          className={`font-handwriting text-lg sm:text-xl md:text-2xl transition-colors hover:text-rose-500 z-10 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}
+          className={`font-handwriting text-lg sm:text-xl md:text-2xl transition-colors hover:text-rose-500 z-10 ${isDark ? 'text-stone-400! hover:text-rose-400!' : 'text-stone-500'}`}
         >
           Next →
         </button>
@@ -85,7 +85,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             {dayNames.map((day, i) => (
               <div 
                 key={day} 
-                className={`text-center font-handwriting text-[13px] sm:text-sm md:text-lg lg:text-2xl ${i === 0 || i === 6 ? 'text-rose-500' : (isDark ? 'text-stone-400' : 'text-stone-600')}`}
+                className={`text-center font-handwriting text-[13px] sm:text-sm md:text-lg lg:text-2xl ${i === 0 || i === 6 ? (isDark ? 'text-rose-400!' : 'text-rose-500') : (isDark ? 'text-stone-400!' : 'text-stone-600')}`}
               >
                 <span className="hidden xs:inline">{day}</span>
                 <span className="xs:hidden">{day.charAt(0)}</span>
@@ -127,7 +127,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                     font-handwriting block w-full text-center leading-none 
                     text-base sm:text-base md:text-2xl lg:text-3xl xl:text-4xl
                     font-variant-numeric tabular-nums
-                    ${hasMemory ? (isDark ? 'text-rose-300' : 'text-rose-600') : (isDark ? 'text-stone-600' : 'text-stone-400')}
+                    ${hasMemory ? (isDark ? 'text-rose-300!' : 'text-rose-600') : (isDark ? 'text-stone-400!' : 'text-stone-600')}
                   `}>
                     {day}
                   </span>
