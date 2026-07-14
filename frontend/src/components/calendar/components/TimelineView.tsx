@@ -28,7 +28,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ memories, monthName, theme 
 
   return (
     <div className="max-w-3xl mx-auto mt-4 sm:mt-8">
-      <h3 className={`text-2xl sm:text-3xl md:text-4xl font-handwriting text-center mb-6 md:mb-10 ${isDark ? 'text-stone-300' : 'text-stone-600'}`}>
+      {/* Added !text-stone-300 here */}
+      <h3 className={`text-2xl sm:text-3xl md:text-4xl font-handwriting text-center mb-6 md:mb-10 ${isDark ? '!text-stone-300' : 'text-stone-600'}`}>
         Clippings from {monthName}
       </h3>
 
@@ -63,7 +64,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ memories, monthName, theme 
                         alt={memory.title} 
                         className="w-full h-full object-cover rounded-sm border border-stone-200 dark:border-stone-700 shadow-sm" 
                       />
-                      <div className="absolute -bottom-1.5 -right-1.5 bg-white dark:bg-stone-800 px-2 py-0.5 rounded shadow border border-stone-200 dark:border-stone-700 font-handwriting text-base md:text-xl text-stone-800 dark:text-stone-200 -rotate-6">
+                      {/* Added dark:!text-stone-200 here */}
+                      <div className="absolute -bottom-1.5 -right-1.5 bg-white dark:bg-stone-800 px-2 py-0.5 rounded shadow border border-stone-200 dark:border-stone-700 font-handwriting text-base md:text-xl text-stone-800 dark:!text-stone-200 -rotate-6">
                         {memDate.getDate()} {monthNames[memDate.getMonth()].substring(0,3)}
                       </div>
                     </div>
@@ -72,7 +74,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ memories, monthName, theme 
                       <span className={`text-2xl sm:text-3xl md:text-4xl font-serif font-bold ${isDark ? 'text-rose-400' : 'text-rose-500'}`}>
                         {memDate.getDate()}
                       </span>
-                      <span className={`font-handwriting text-lg md:text-xl ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                      {/* Added !text-stone-400 here */}
+                      <span className={`font-handwriting text-lg md:text-xl ${isDark ? '!text-stone-400' : 'text-stone-500'}`}>
                         {monthNames[memDate.getMonth()].substring(0,3)}
                       </span>
                     </div>
@@ -82,7 +85,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ memories, monthName, theme 
                     <h5 className={`text-lg sm:text-xl md:text-2xl font-serif font-bold leading-tight mb-1 md:mb-2 break-words ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
                       {memory.title}
                     </h5>
-                    <p className={`font-handwriting text-base sm:text-lg md:text-xl line-clamp-3 sm:line-clamp-2 break-words ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
+                    {/* Added !text-stone-400 here */}
+                    <p className={`font-handwriting text-base sm:text-lg md:text-xl line-clamp-3 sm:line-clamp-2 break-words ${isDark ? '!text-stone-400' : 'text-stone-600'}`}>
                       {memory.description}
                     </p>
                   </div>

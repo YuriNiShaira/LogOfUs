@@ -229,15 +229,9 @@ const MemoryCalendarPage: React.FC = () => {
         @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
         .font-handwriting { font-family: 'Caveat', cursive; }
         .font-serif { font-family: 'Playfair Display', serif; }
-        
-        .bg-dotted-paper {
-          background-image: radial-gradient(${isDark ? '#333' : '#e5e1d8'} 1px, transparent 1px);
-          background-size: 20px 20px;
-        }
       `}} />
 
       <RomanticBackground />
-      <div className="bg-dotted-paper absolute inset-0 pointer-events-none opacity-50" />
       <Navbar />
 
       <div className="max-w-6xl mx-auto relative z-10 px-4 sm:px-6 py-6 md:py-10 pb-24 md:pb-16">
