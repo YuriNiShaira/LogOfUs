@@ -35,6 +35,13 @@ const LoveLetterManager: React.FC = () => {
             color: #4c0519 !important; /* Rose 950 */
             color-scheme: light !important;
             -webkit-text-fill-color: #4c0519 !important;
+            background-color: transparent !important; /* Prevents global dark mode from making inputs dark */
+          }
+          #love-letter-modal-root input[type="text"] {
+            border-color: #fecdd3 !important; /* Rose 200 */
+          }
+          #love-letter-modal-root input[type="text"]:focus {
+            border-color: #fb7185 !important; /* Rose 400 */
           }
           #love-letter-modal-root input::placeholder,
           #love-letter-modal-root textarea::placeholder {
@@ -162,8 +169,8 @@ const LoveLetterManager: React.FC = () => {
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 30, opacity: 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              /* Premium Ivory Stationery Styling */
-              className="relative bg-[#FFFAF0] rounded-sm w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] border-8 border-white ring-1 ring-rose-900/10"
+              /* Added force-light-theme to protect against global dark mode */
+              className="relative bg-[#FFFAF0] rounded-sm w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] border-8 border-white ring-1 ring-rose-900/10 force-light-theme"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Subtle paper texture overlay */}
