@@ -10,12 +10,22 @@ import {
   Eye,
   EyeOff,
   Settings,
-  BookHeart
+  BookHeart,
+  Sparkles,
+  Flower2,
+  Cloud,
+  CloudRain,
+  Snowflake,
+  Cat,
+  Check,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
+import type { BackgroundTheme } from './backgrounds/types';
 
 interface UserProfile {
   id: number;
@@ -44,7 +54,7 @@ const SettingsDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, } = useTheme();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +82,11 @@ const SettingsDropdown: React.FC = () => {
   const [settings, setSettings] = useState({
     enablePetals: true,
     enableAnimations: true,
+    enableCats: true,
   });
+
+  // Background theme state
+  const [currentBackground, setCurrentBackground] = useState<BackgroundTheme>('cherry-blossom');
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -134,10 +148,16 @@ const SettingsDropdown: React.FC = () => {
     const savedSettings = localStorage.getItem('user_settings');
     if (savedSettings) {
       try {
-        setSettings(JSON.parse(savedSettings));
+        const parsed = JSON.parse(savedSettings);
+        setSettings(prev => ({ ...prev, ...parsed }));
       } catch (e) {
         // ignore
       }
+    }
+
+    const savedBackground = localStorage.getItem('backgroundTheme') as BackgroundTheme;
+    if (savedBackground) {
+      setCurrentBackground(savedBackground);
     }
   }, []);
 
@@ -153,6 +173,23 @@ const SettingsDropdown: React.FC = () => {
       key: 'user_settings',
       newValue: JSON.stringify(newSettings),
     }));
+  };
+
+  // Handle background theme change
+  const handleBackgroundChange = (bgTheme: BackgroundTheme) => {
+    setCurrentBackground(bgTheme);
+    localStorage.setItem('backgroundTheme', bgTheme);
+    
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'backgroundTheme',
+      newValue: bgTheme
+    }));
+    
+    window.dispatchEvent(new CustomEvent('backgroundThemeChange', {
+      detail: { theme: bgTheme }
+    }));
+    
+    toast.success(`Background changed to ${bgTheme.replace('-', ' ')} ✨`);
   };
 
   // Handle profile update
@@ -249,12 +286,20 @@ const SettingsDropdown: React.FC = () => {
     { id: 'profile' as const, label: 'Profile', icon: User },
     { id: 'couple' as const, label: 'Couple', icon: BookHeart },
     { id: 'security' as const, label: 'Privacy', icon: Lock },
-    { id: 'preferences' as const, label: 'Preferences', icon: Palette },
+    { id: 'preferences' as const, label: 'Aesthetics', icon: Palette },
+  ];
+
+  const backgroundThemes: { id: BackgroundTheme; label: string; icon: React.ReactNode }[] = [
+    { id: 'cherry-blossom', label: 'Cherry Blossom', icon: <Flower2 size={18} /> },
+    { id: 'starry-night', label: 'Starry Night', icon: <Moon size={18} /> },
+    { id: 'rainy-day', label: 'Rainy Day', icon: <CloudRain size={18} /> },
+    { id: 'cloudy', label: 'Cloudy', icon: <Cloud size={18} /> },
+    { id: 'sunny', label: 'Sunny', icon: <Sun size={18} /> },
+    { id: 'snowy', label: 'Snowy', icon: <Snowflake size={18} /> },
   ];
 
   return (
     <div className="relative z-50" ref={dropdownRef}>
-      {/* Settings Button */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -268,7 +313,6 @@ const SettingsDropdown: React.FC = () => {
         <Settings className="w-5 h-5" />
       </motion.button>
 
-      {/* Dropdown / Journal Modal */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -284,11 +328,10 @@ const SettingsDropdown: React.FC = () => {
           >
             <div className="flex h-[520px]">
               
-              {/* Sidebar Tabs (Looks like journal bookmarks) */}
+              {/* Sidebar Tabs */}
               <div className={`w-40 shrink-0 py-6 px-3 flex flex-col gap-1 border-r relative z-10 ${
                 isDark ? 'border-[#3a3535] bg-[#1c1a1a]/50' : 'border-[#e8e4dc] bg-[#f2efe9]/50'
               }`}>
-                {/* Decorative binding line */}
                 <div className={`absolute right-0 top-0 bottom-0 w-[1px] shadow-[-2px_0_4px_rgba(0,0,0,0.05)] ${isDark ? 'bg-black/20' : 'bg-black/5'}`} />
 
                 {tabs.map((tab) => {
@@ -310,8 +353,6 @@ const SettingsDropdown: React.FC = () => {
                     >
                       <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse duration-1000' : ''}`} />
                       <span className="tracking-wide">{tab.label}</span>
-                      
-                      {/* Active tab extending element */}
                       {isActive && (
                         <div className={`absolute -right-3 top-0 bottom-0 w-3 ${isDark ? 'bg-[#242121]' : 'bg-[#faf8f5]'}`} />
                       )}
@@ -337,10 +378,8 @@ const SettingsDropdown: React.FC = () => {
                 </div>
               </div>
 
-              {/* Content Area (The "Paper") */}
+              {/* Content Area */}
               <div className="flex-1 overflow-y-auto p-8 relative">
-                {/* Subtle paper texture/lines overlay could go here */}
-                
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="w-6 h-6 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
@@ -638,7 +677,7 @@ const SettingsDropdown: React.FC = () => {
                       </form>
                     )}
 
-                    {/* Preferences Tab */}
+                    {/* Preferences Tab - with Cats toggle */}
                     {activeTab === 'preferences' && (
                       <div className="space-y-6">
                         <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
@@ -651,25 +690,52 @@ const SettingsDropdown: React.FC = () => {
                         </div>
                         
                         <div className="space-y-2">
-                          {/* Dark Mode */}
-                          <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
-                            <div>
-                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Midnight Reading</p>
-                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Switch to dark paper</p>
+                          {/* Background Theme Selector */}
+                          <div className="space-y-3">
+                            <label className={`block text-xs font-serif tracking-widest uppercase ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="w-4 h-4" />
+                                Background Theme
+                              </div>
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {backgroundThemes.map((bgTheme) => {
+                                const isActive = currentBackground === bgTheme.id;
+                                return (
+                                  <button
+                                    key={bgTheme.id}
+                                    onClick={() => handleBackgroundChange(bgTheme.id)}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-serif ${
+                                      isActive
+                                        ? isDark 
+                                          ? 'bg-rose-900/50 text-rose-300 border border-rose-700/50' 
+                                          : 'bg-rose-100 text-rose-700 border border-rose-300'
+                                        : isDark 
+                                          ? 'bg-stone-800/50 text-stone-300 hover:bg-stone-700/50 border border-stone-700/30'
+                                          : 'bg-stone-50/50 text-stone-600 hover:bg-stone-100 border border-stone-200/30'
+                                    }`}
+                                  >
+                                    <span className="flex-shrink-0">{bgTheme.icon}</span>
+                                    <span className="flex-1 text-left truncate">{bgTheme.label}</span>
+                                    {isActive && <Check className="w-3 h-3 text-rose-500 flex-shrink-0" />}
+                                  </button>
+                                );
+                              })}
                             </div>
-                            <button
-                              onClick={toggleTheme}
-                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${isDark ? 'bg-rose-500/80' : 'bg-stone-300'}`}
-                            >
-                              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${isDark ? 'right-1' : 'left-1'}`} />
-                            </button>
                           </div>
+
+                          <div className="h-px bg-gradient-to-r from-transparent via-stone-300/30 to-transparent my-4" />
 
                           {/* Falling Petals */}
                           <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
                             <div>
-                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Falling Petals</p>
-                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Drifting romantic memories</p>
+                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                                <Flower2 className="inline w-4 h-4 mr-2 text-rose-400" />
+                                Falling Petals
+                              </p>
+                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                                Drifting romantic memories
+                              </p>
                             </div>
                             <button
                               onClick={() => handleSettingToggle('enablePetals')}
@@ -679,11 +745,35 @@ const SettingsDropdown: React.FC = () => {
                             </button>
                           </div>
 
-                          {/* Animations */}
+                          {/* Show Cats */}
                           <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
                             <div>
-                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>Smooth Turning</p>
-                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>Page flip animations</p>
+                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                                <Cat className="inline w-4 h-4 mr-2 text-amber-400" />
+                                Show Cats
+                              </p>
+                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                                Cute cat stickers roaming around
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleSettingToggle('enableCats')}
+                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enableCats !== false ? 'bg-rose-500/80' : 'bg-stone-300'}`}
+                            >
+                              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enableCats !== false ? 'right-1' : 'left-1'}`} />
+                            </button>
+                          </div>
+
+                          {/* Smooth Turning */}
+                          <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
+                            <div>
+                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                                <Sparkles className="inline w-4 h-4 mr-2 text-amber-400" />
+                                Smooth Turning
+                              </p>
+                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                                Page flip animations
+                              </p>
                             </div>
                             <button
                               onClick={() => handleSettingToggle('enableAnimations')}
