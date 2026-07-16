@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import type { BackgroundTheme } from './types';
 import { 
   Flower2, 
-  Moon, 
   CloudRain, 
   Cloud, 
   Sun, 

@@ -25,7 +25,7 @@ class Couple(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    couple = models.ForeignKey(Couple, on_delete=models.CASCADE, related_name='members', null=True)
+    couple = models.ForeignKey(Couple, on_delete=models.CASCADE, related_name='members', null=True, blank=True)
     display_name = models.CharField(max_length=50)
     profile_picture = models.URLField(max_length=500, null=True, blank=True) 
     hover_profile_picture = models.URLField(max_length=500, null=True, blank=True)

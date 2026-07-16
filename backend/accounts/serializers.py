@@ -66,7 +66,7 @@ class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True, min_length=6)
     display_name = serializers.CharField(max_length=50)
-    anniversary_date = serializers.DateField()  # REQUIRED
+    anniversary_date = serializers.DateField()
     
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
@@ -195,7 +195,7 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Account is not properly set up. Please contact support." )
         
         if not user.profile.couple:
-            raise serializers.ValidationError("You haven't joined a couple yet! ""Ask your partner for the invite code.")
+            raise serializers.ValidationError("You haven't joined a couple yet! Ask your partner for the invite code.")
         
         data['user'] = user
         data['couple'] = user.profile.couple

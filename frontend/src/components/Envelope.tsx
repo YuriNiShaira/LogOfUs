@@ -38,7 +38,7 @@ const floatingHearts = [
   { id: 5, left: "82%", delay: 0.05 },
 ];
 
-// Modern Frame with Buttons - ENHANCED EMPTY STATE
+// Photo frame component with hover effect and upload buttons
 const ModernFrame: React.FC<{
   imageUrl?: string | null;
   hoverImageUrl?: string | null;
@@ -72,7 +72,7 @@ const ModernFrame: React.FC<{
   const hasHoverImage = !!hoverImageUrl && hoverImageUrl.trim() !== '' && hoverImageUrl !== primaryImage;
   const showHoverImage = isHovering && hasHoverImage;
 
-  // Different color accents for partner 2
+  // Partner 2 gets blue accents instead of rose
   const accentHoverClass = isPartner2 
     ? 'hover:from-blue-50/90 hover:via-white/90 hover:to-blue-50/90' 
     : 'hover:from-rose-50/90 hover:via-white/90 hover:to-rose-50/90';
@@ -98,7 +98,7 @@ const ModernFrame: React.FC<{
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      {/* Outer Frame (Black) */}
+      {/* Outer black frame */}
       <div 
         className={`
           relative p-1.5 sm:p-2 rounded-sm shadow-md transition-all duration-500
@@ -108,12 +108,12 @@ const ModernFrame: React.FC<{
           ${isHovering && primaryImage ? 'shadow-2xl' : ''}
         `}
       >
-        {/* Inner Matting (White) */}
+        {/* Inner white matting */}
         <div className="w-full h-full p-2 sm:p-3 bg-[#fdfdfd]">
-          {/* Edge-to-Edge Photo Container */}
+          {/* Photo container with inset shadow */}
           <div className="relative w-full h-full overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.15)]">
             
-            {/* Primary Image - visible when exists */}
+            {/* Main photo */}
             {primaryImage && (
               <img 
                 src={primaryImage}
@@ -126,7 +126,7 @@ const ModernFrame: React.FC<{
               />
             )}
 
-            {/* Hover Image - fades in on hover */}
+            {/* Hover photo overlay */}
             {hasHoverImage && primaryImage && (
               <img 
                 src={hoverImage || ''}
@@ -142,7 +142,7 @@ const ModernFrame: React.FC<{
               />
             )}
 
-            {/* Glass/Sheen overlay on hover (only when hover image exists) */}
+            {/* Glass-like sheen on hover */}
             {hasHoverImage && primaryImage && (
               <div 
                 className={`
@@ -153,7 +153,7 @@ const ModernFrame: React.FC<{
               />
             )}
 
-            {/* ENHANCED: Empty state - no photo uploaded */}
+            {/* Empty state - upload button */}
             {!primaryImage && (
               <button
                 onClick={(e) => {
@@ -166,7 +166,6 @@ const ModernFrame: React.FC<{
                            cursor-pointer group focus:outline-none ${accentRingClass}`}
                 aria-label="Upload main photo"
               >
-                {/* Animated pulsing ring */}
                 <div className="relative mb-3">
                   <motion.div 
                     className={`absolute inset-0 rounded-full ${accentPulseClass}`}
@@ -183,7 +182,6 @@ const ModernFrame: React.FC<{
                   </div>
                 </div>
                 
-                {/* Silhouette placeholder */}
                 <motion.div 
                   className="mb-3 opacity-30 group-hover:opacity-40 transition-opacity duration-300"
                   animate={{ y: [0, -3, 0] }}
@@ -195,7 +193,6 @@ const ModernFrame: React.FC<{
                   </svg>
                 </motion.div>
 
-                {/* Call to action text */}
                 <div className="text-center px-2">
                   <p className={`text-xs font-serif ${isPartner2 ? 'text-blue-600/70 group-hover:text-blue-700' : 'text-rose-600/70 group-hover:text-rose-700'} transition-colors font-medium tracking-wide`}>
                     Add your photo
@@ -205,7 +202,7 @@ const ModernFrame: React.FC<{
                   </p>
                 </div>
 
-                {/* Decorative corner elements */}
+                {/* Decorative sparkles */}
                 <div className="absolute top-2 left-2">
                   <motion.div
                     animate={{ opacity: [0.3, 0.6, 0.3], rotate: [0, 180, 360] }}
@@ -222,13 +219,11 @@ const ModernFrame: React.FC<{
                     <Sparkles className="h-2.5 w-2.5 text-amber-300/50" />
                   </motion.div>
                 </div>
-
-                {/* Bottom gradient fade for depth */}
                 <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-gray-100/40 to-transparent pointer-events-none" />
               </button>
             )}
 
-            {/* Hover indicator badge (only when image exists) */}
+            {/* Tiny indicator for photos with hover effect */}
             {primaryImage && hasHoverImage && (
               <div className="absolute top-1 right-1 z-20 pointer-events-none">
                 <div className="bg-black/40 backdrop-blur-sm rounded-full px-1.5 py-0.5">
@@ -240,7 +235,7 @@ const ModernFrame: React.FC<{
         </div>
       </div>
 
-      {/* Name and Buttons below */}
+      {/* Name label and action buttons */}
       <div className="flex flex-col items-center gap-2 w-full max-w-35">
         <span className={`
           letter-title text-base sm:text-lg tracking-widest block truncate text-center
@@ -249,8 +244,8 @@ const ModernFrame: React.FC<{
           {name}
         </span>
         
-        {/* Upload Buttons */}
         <div className="flex items-center gap-2">
+          {/* Main photo upload button */}
           <button
             onClick={(e) => { e.stopPropagation(); onUpload(); }}
             disabled={isUploading}
@@ -271,6 +266,7 @@ const ModernFrame: React.FC<{
             {isUploading ? '...' : primaryImage ? 'Change' : 'Add Photo'}
           </button>
           
+          {/* Hover photo upload button */}
           <button
             onClick={(e) => { e.stopPropagation(); onUploadHover(); }}
             disabled={isUploadingHover || !primaryImage}
@@ -294,7 +290,7 @@ const ModernFrame: React.FC<{
           </button>
         </div>
         
-        {/* Small helper text */}
+        {/* Status message */}
         <span className="text-[8px] text-rose-400/40 font-serif tracking-wider text-center">
           {!primaryImage 
             ? '✨ add your photo to begin' 
@@ -307,6 +303,7 @@ const ModernFrame: React.FC<{
   );
 };
 
+// Main envelope component with letter display
 const Envelope: React.FC = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -317,15 +314,16 @@ const Envelope: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   
-  // Upload modal states
+  // Upload modal controls
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadType, setUploadType] = useState<'main' | 'hover'>('main');
+  const [uploadTarget, setUploadTarget] = useState<'partner1' | 'partner2'>('partner1');
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingHover, setIsUploadingHover] = useState(false);
   
   const timeoutsRef = useRef<number[]>([]);
 
-  // Fetch love letters
+  // Fetch love letters from API
   const { data: loveLetters, isLoading, isError } = useQuery<LoveLetter[]>({
     queryKey: ["loveLetters"],
     queryFn: async () => {
@@ -334,7 +332,7 @@ const Envelope: React.FC = () => {
     },
   });
 
-  // Fetch user profile
+  // Fetch current user's profile
   const { data: userProfile, refetch: refetchUserProfile } = useQuery<UserProfile>({
     queryKey: ["userProfile"],
     queryFn: async () => {
@@ -344,7 +342,24 @@ const Envelope: React.FC = () => {
     enabled: !!user,
   });
 
-  // Fetch couple info
+  // Fetch partner's profile
+  const { data: partnerProfile, refetch: refetchPartnerProfile } = useQuery<UserProfile>({
+    queryKey: ["partnerProfile"],
+    queryFn: async () => {
+      try {
+        const response = await api.get("/auth/partner-profile/");
+        return response.data;
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    enabled: !!user,
+  });
+
+  // Fetch couple information
   const { data: coupleInfo } = useQuery<CoupleInfo>({
     queryKey: ["coupleInfo"],
     queryFn: async () => {
@@ -361,8 +376,19 @@ const Envelope: React.FC = () => {
 
   const isDark = theme === 'dark';
   
-  // Determine which partner the current user is (1 or 2)
-  const isPartner1 = coupleInfo?.partner1_name === userProfile?.display_name;
+  // ✅ FIX: More reliable isPartner1 detection
+  const isPartner1 = useMemo(() => {
+    if (!coupleInfo || !userProfile) {
+      return true;
+    }
+    
+    // If there's only 1 member, current user is partner 1
+    if (coupleInfo.member_count === 1) {
+      return true;
+    }
+    
+    return coupleInfo.partner1_name === userProfile.display_name;
+  }, [coupleInfo, userProfile]);
   
   const myName = userProfile?.display_name || user?.display_name || "You";
   const partnerName = coupleInfo?.partner_name || coupleInfo?.partner2_name || "Partner";
@@ -370,48 +396,99 @@ const Envelope: React.FC = () => {
   const myPhoto = userProfile?.profile_picture || null;
   const myHoverPhoto = userProfile?.hover_profile_picture || null;
   
-  const partnerPhoto = null;
-  const partnerHoverPhoto = null;
+  const partnerPhoto = partnerProfile?.profile_picture || null;
+  const partnerHoverPhoto = partnerProfile?.hover_profile_picture || null;
 
-  // Open upload modal
-  const openUploadModal = (type: 'main' | 'hover') => {
+  // ✅ FIX: Open upload modal with specific target and type
+  const openUploadModal = (type: 'main' | 'hover', target: 'partner1' | 'partner2') => {
+    console.log('📤 Opening upload modal for:', target, 'type:', type);
     setUploadType(type);
+    setUploadTarget(target);
     setUploadModalOpen(true);
   };
 
-  // Handle upload
+  // ✅ FIX: Handle photo upload with correct target
   const handleUpload = async (file: File) => {
     const isMain = uploadType === 'main';
-    const endpoint = isMain 
-      ? '/auth/upload-profile-picture/'
-      : '/auth/upload-hover-profile-picture/';
-    const fieldName = isMain ? 'profile_picture' : 'hover_profile_picture';
-
+    const target = uploadTarget;
+    
+    console.log('📤 Uploading for target:', target);
+    console.log('📤 Upload type:', isMain ? 'main' : 'hover');
+    
     if (isMain) setIsUploading(true);
     else setIsUploadingHover(true);
 
     try {
       const formData = new FormData();
+      const fieldName = isMain ? 'profile_picture' : 'hover_profile_picture';
       formData.append(fieldName, file);
 
-      await api.patch(endpoint, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      // ✅ CORRECT ENDPOINTS based on target
+      let endpoint;
+      if (target === 'partner2') {
+        endpoint = isMain 
+          ? '/auth/partner/upload-profile-picture/' 
+          : '/auth/partner/upload-hover-profile-picture/';
+      } else {
+        endpoint = isMain 
+          ? '/auth/upload-profile-picture/' 
+          : '/auth/upload-hover-profile-picture/';
+      }
+
+      console.log('📡 Uploading to:', endpoint);
+      console.log('📎 File:', file.name, file.size, file.type);
+
+      const response = await api.patch(endpoint, formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      await refetchUserProfile();
-      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      console.log('✅ Upload success:', response.data);
+
+      // ✅ FIX: Refetch the correct profile after upload
+      if (target === 'partner2') {
+        console.log('🔄 Refetching partner profile...');
+        await refetchPartnerProfile();
+        queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
+      } else {
+        console.log('🔄 Refetching user profile...');
+        await refetchUserProfile();
+        queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      }
       
-      toast.success(isMain ? 'Main photo updated!' : 'Hover photo updated!');
+      // ✅ Also invalidate couple info to update partner status
+      queryClient.invalidateQueries({ queryKey: ['coupleInfo'] });
+      
+      toast.success(isMain ? 'Photo updated! 📸' : 'Hover photo updated! ✨');
       setUploadModalOpen(false);
     } catch (error: any) {
-      console.error('Upload error:', error);
-      toast.error(error.response?.data?.error || 'Failed to upload');
+      console.error('❌ Upload error:', error);
+      console.error('❌ Error response:', error.response?.data);
+      
+      let errorMessage = 'Failed to upload';
+      if (error.code === 'ERR_NETWORK') {
+        errorMessage = 'Network error - please check your connection';
+      } else if (error.response?.status === 413) {
+        errorMessage = 'File too large - please choose a smaller image';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.error || 'Invalid file format';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Upload endpoint not found. Please contact support.';
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       if (isMain) setIsUploading(false);
       else setIsUploadingHover(false);
     }
   };
 
+  // Clean up timeouts on unmount
   useEffect(() => {
     return () => clearTimeouts();
   }, []);
@@ -421,6 +498,7 @@ const Envelope: React.FC = () => {
     timeoutsRef.current = [];
   };
 
+  // Handle envelope click - triggers the whole animation sequence
   const handleEnvelopeClick = () => {
     if (!currentLetter || isAnimating) return;
 
@@ -428,16 +506,19 @@ const Envelope: React.FC = () => {
     setIsAnimating(true);
     setIsEnvelopeOpen(true);
 
+    // Show magic particles
     const t1 = window.setTimeout(() => {
       setShowMagic(true);
       setShowLetterPreview(true);
     }, 350);
 
+    // Open the full letter modal
     const t2 = window.setTimeout(() => {
       setShowLetterPreview(false);
       setShowModal(true);
     }, 1300);
 
+    // Reset everything
     const t3 = window.setTimeout(() => {
       setShowMagic(false);
       setIsEnvelopeOpen(false);
@@ -538,8 +619,9 @@ const Envelope: React.FC = () => {
 
       <div className="flex flex-col items-center justify-center py-12 select-none overflow-hidden">
         
-        {/* Desktop Layout */}
+        {/* Desktop layout with photos on both sides of envelope */}
         <div className="hidden md:flex items-center justify-center gap-12 lg:gap-20 w-full max-w-5xl px-6">
+          {/* LEFT FRAME - Partner 1 */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, type: "spring" }}>
             <ModernFrame 
               imageUrl={isPartner1 ? myPhoto : partnerPhoto} 
@@ -547,15 +629,15 @@ const Envelope: React.FC = () => {
               name={isPartner1 ? myName : partnerName} 
               side="left" 
               isDark={isDark} 
-              onUpload={() => openUploadModal('main')}
-              onUploadHover={() => openUploadModal('hover')}
+              onUpload={() => openUploadModal('main', 'partner1')}
+              onUploadHover={() => openUploadModal('hover', 'partner1')}
               isUploading={isUploading}
               isUploadingHover={isUploadingHover}
               isPartner2={false}
             />
           </motion.div>
 
-          {/* Envelope Trigger */}
+          {/* Envelope button */}
           <motion.button
             type="button"
             onClick={handleEnvelopeClick}
@@ -571,6 +653,7 @@ const Envelope: React.FC = () => {
               className="relative h-full w-full"
               style={{ willChange: "transform" }}
             >
+              {/* Glow effect */}
               <motion.div
                 animate={isEnvelopeOpen ? { opacity: 1, scale: 1.1 } : { opacity: [0.4, 0.7, 0.4], scale: [1, 1.03, 1] }}
                 transition={isEnvelopeOpen ? { duration: 0.4 } : { duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
@@ -578,6 +661,7 @@ const Envelope: React.FC = () => {
                 className={`absolute inset-0 rounded-4xl blur-2xl transition-colors duration-500 ${isDark ? "bg-purple-500/20" : "bg-pink-400/20"}`}
               />
 
+              {/* Floating hearts animation */}
               <AnimatePresence>
                 {showMagic && (
                   <>
@@ -596,9 +680,11 @@ const Envelope: React.FC = () => {
                 )}
               </AnimatePresence>
 
+              {/* Envelope body with gradient */}
               <div className="absolute inset-0 z-10 rounded-[30px] bg-linear-to-br from-rose-300 via-pink-300 to-fuchsia-400 shadow-[0_28px_70px_rgba(236,72,153,0.18)]" />
               <div className="absolute inset-0.5 z-12 rounded-[28px] bg-linear-to-b from-white/20 to-transparent" />
 
+              {/* Letter preview that pops up */}
               <AnimatePresence>
                 {showLetterPreview && currentLetter && (
                   <motion.div
@@ -632,10 +718,12 @@ const Envelope: React.FC = () => {
                 )}
               </AnimatePresence>
 
+              {/* Bottom flap of envelope */}
               <div className="absolute bottom-0 left-0 z-30 h-35.5 w-full rounded-b-[30px] bg-linear-to-br from-rose-100 via-pink-100 to-pink-200" />
               <div className="absolute bottom-0 left-0 z-32 h-35.5 w-1/2" style={{ clipPath: "polygon(0 0, 100% 50%, 100% 100%, 0 100%)", background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.1))", borderBottomLeftRadius: "30px" }} />
               <div className="absolute bottom-0 right-0 z-32 h-35.5 w-1/2" style={{ clipPath: "polygon(0 50%, 100% 0, 100% 100%, 0 100%)", background: "linear-gradient(225deg, rgba(255,255,255,0.4), rgba(255,255,255,0.08))", borderBottomRightRadius: "30px" }} />
 
+              {/* Top flap that folds open */}
               <motion.div
                 initial={false}
                 animate={isEnvelopeOpen ? { rotateX: -180, y: -1, zIndex: 15 } : { rotateX: 0, y: 0, zIndex: 35 }}
@@ -646,6 +734,7 @@ const Envelope: React.FC = () => {
                 <div className="absolute inset-0 shadow-md" style={{ clipPath: "polygon(0 0, 100% 0, 50% 100%)", background: "linear-gradient(135deg, #fb7185 0%, #ec4899 50%, #be185d 100%)", borderTopLeftRadius: "30px", borderTopRightRadius: "30px" }} />
               </motion.div>
 
+              {/* Envelope content overlay */}
               <motion.div animate={isEnvelopeOpen ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} className="absolute inset-0 z-40 flex items-center justify-center" style={{ willChange: "opacity, transform" }}>
                 <div className="flex flex-col items-center gap-3 px-6 text-center">
                   <motion.div animate={!isEnvelopeOpen ? { scale: [1, 1.06, 1] } : { scale: 1 }} transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }} className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 shadow-lg shadow-pink-300/50 wax-seal">
@@ -664,6 +753,7 @@ const Envelope: React.FC = () => {
             </motion.div>
           </motion.button>
 
+          {/* RIGHT FRAME - Partner 2 */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, type: "spring", delay: 0.1 }}>
             <ModernFrame 
               imageUrl={isPartner1 ? partnerPhoto : myPhoto} 
@@ -671,16 +761,16 @@ const Envelope: React.FC = () => {
               name={isPartner1 ? partnerName : myName} 
               side="right" 
               isDark={isDark} 
-              onUpload={() => openUploadModal('main')}
-              onUploadHover={() => openUploadModal('hover')}
+              onUpload={() => openUploadModal('main', 'partner2')}
+              onUploadHover={() => openUploadModal('hover', 'partner2')}
               isUploading={isUploading}
               isUploadingHover={isUploadingHover}
-              isPartner2={!isPartner1}
+              isPartner2={true}
             />
           </motion.div>
         </div>
 
-        {/* Mobile Layout */}
+        {/* Mobile layout - photos stacked on top */}
         <div className="md:hidden flex flex-col items-center gap-10 w-full px-4">
           <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pt-4">
             <ModernFrame 
@@ -689,8 +779,8 @@ const Envelope: React.FC = () => {
               name={isPartner1 ? myName : partnerName} 
               side="left" 
               isDark={isDark} 
-              onUpload={() => openUploadModal('main')}
-              onUploadHover={() => openUploadModal('hover')}
+              onUpload={() => openUploadModal('main', 'partner1')}
+              onUploadHover={() => openUploadModal('hover', 'partner1')}
               isUploading={isUploading}
               isUploadingHover={isUploadingHover}
               isPartner2={false}
@@ -701,24 +791,26 @@ const Envelope: React.FC = () => {
               name={isPartner1 ? partnerName : myName} 
               side="right" 
               isDark={isDark} 
-              onUpload={() => openUploadModal('main')}
-              onUploadHover={() => openUploadModal('hover')}
+              onUpload={() => openUploadModal('main', 'partner2')}
+              onUploadHover={() => openUploadModal('hover', 'partner2')}
               isUploading={isUploading}
               isUploadingHover={isUploadingHover}
-              isPartner2={!isPartner1}
+              isPartner2={true}
             />
           </div>
 
+          {/* Mobile envelope - smaller version */}
           <motion.button
             type="button" onClick={handleEnvelopeClick} disabled={!currentLetter || isAnimating}
             whileHover={!isAnimating ? { scale: 1.03 } : {}} whileTap={!isAnimating ? { scale: 0.96 } : {}}
             className="relative h-52 w-72 cursor-pointer border-0 bg-transparent p-0 outline-none focus:ring-2 focus:ring-pink-400/40 rounded-4xl shrink-0 z-10 mt-2"
           >
-             <motion.div animate={isEnvelopeOpen ? { y: 10, scale: 0.95 } : { y: [0, -3, 0], scale: 1, rotate: 0 }} transition={isEnvelopeOpen ? { type: "spring", stiffness: 100, damping: 15 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }} className="relative h-full w-full">
+            <motion.div animate={isEnvelopeOpen ? { y: 10, scale: 0.95 } : { y: [0, -3, 0], scale: 1, rotate: 0 }} transition={isEnvelopeOpen ? { type: "spring", stiffness: 100, damping: 15 } : { duration: 3.5, repeat: Infinity, ease: "easeInOut" }} className="relative h-full w-full">
               
               <div className="absolute inset-0 z-10 rounded-[30px] bg-linear-to-br from-rose-300 via-pink-300 to-fuchsia-400 shadow-[0_28px_70px_rgba(236,72,153,0.18)]" />
               <div className="absolute inset-0.5 z-12 rounded-[28px] bg-linear-to-b from-white/20 to-transparent" />
               
+              {/* Mobile letter preview */}
               <AnimatePresence>
                 {showLetterPreview && currentLetter && (
                   <motion.div initial={{ y: 20, scale: 0.85, opacity: 0 }} animate={{ y: -100, scale: 1, opacity: 1, rotate: [-1, 1.5, 0.5] }} exit={{ opacity: 0, scale: 0.95, y: -110 }} transition={{ y: { type: "spring", stiffness: 50, damping: 14 } }} className="absolute left-[6%] top-8 z-20 w-[88%]">
@@ -732,14 +824,17 @@ const Envelope: React.FC = () => {
                 )}
               </AnimatePresence>
 
+              {/* Mobile bottom flap */}
               <div className="absolute bottom-0 left-0 z-30 h-30 w-full rounded-b-[30px] bg-linear-to-br from-rose-100 via-pink-100 to-pink-200" />
               <div className="absolute bottom-0 left-0 z-32 h-30 w-1/2" style={{ clipPath: "polygon(0 0, 100% 50%, 100% 100%, 0 100%)", background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.1))", borderBottomLeftRadius: "30px" }} />
               <div className="absolute bottom-0 right-0 z-32 h-30 w-1/2" style={{ clipPath: "polygon(0 50%, 100% 0, 100% 100%, 0 100%)", background: "linear-gradient(225deg, rgba(255,255,255,0.4), rgba(255,255,255,0.08))", borderBottomRightRadius: "30px" }} />
 
+              {/* Mobile top flap */}
               <motion.div initial={false} animate={isEnvelopeOpen ? { rotateX: -180, y: -1, zIndex: 15 } : { rotateX: 0, y: 0, zIndex: 35 }} transition={{ type: "spring", stiffness: 85, damping: 15 }} className="absolute left-0 top-0 h-26 w-full origin-top" style={{ perspective: 1000 }}>
                 <div className="absolute inset-0 shadow-md" style={{ clipPath: "polygon(0 0, 100% 0, 50% 100%)", background: "linear-gradient(135deg, #fb7185 0%, #ec4899 50%, #be185d 100%)", borderTopLeftRadius: "30px", borderTopRightRadius: "30px" }} />
               </motion.div>
 
+              {/* Mobile content overlay */}
               <motion.div animate={isEnvelopeOpen ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }} className="absolute inset-0 z-40 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2 px-4 text-center">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-lg wax-seal">
@@ -755,7 +850,7 @@ const Envelope: React.FC = () => {
         </div>
       </div>
 
-      {/* Full Modal Letter */}
+      {/* Full-screen letter modal */}
       <AnimatePresence>
         {showModal && currentLetter && (
           <motion.div
@@ -777,6 +872,7 @@ const Envelope: React.FC = () => {
               <div className="paper-bg paper-edge rounded-sm shadow-2xl overflow-hidden relative">
                 <div className="gold-border" />
 
+                {/* Wax seal decoration */}
                 <div className="absolute top-6 right-6 z-20 md:top-8 md:right-8">
                   <motion.div initial={{ scale: 0, rotate: -40 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", delay: 0.4, damping: 12 }} className="h-12 w-12 rounded-full bg-linear-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg wax-seal border border-red-900/50">
                     <Heart className="h-5 w-5 fill-red-300/80 text-red-200" />
@@ -810,6 +906,7 @@ const Envelope: React.FC = () => {
               </div>
             </motion.div>
 
+            {/* Close button */}
             <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ delay: 0.5 }} onClick={handleClose} className="absolute top-4 right-4 md:top-8 md:right-8 z-101 rounded-full p-2.5 bg-white/60 backdrop-blur-sm hover:bg-white/90 text-rose-950 transition-all shadow-md cursor-pointer">
               <X className="h-5 w-5" />
             </motion.button>

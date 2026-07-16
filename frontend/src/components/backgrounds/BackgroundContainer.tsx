@@ -18,17 +18,12 @@ const BackgroundContainer: React.FC<BackgroundContainerProps> = ({
   isDark, 
   enablePetals = true 
 }) => {
-  // 🔍 Debug: Log when component renders
-  console.log('🔍 BackgroundContainer render:', { isDark, theme, returning: isDark ? 'StarryNight' : theme });
-
   const props: BackgroundProps = { theme, isDark, enablePetals };
 
   if (isDark) {
-    console.log('🌙 Dark mode ON - showing StarryNight');
     return <StarryNightBackground {...props} />;
   }
 
-  // In light mode, show the selected theme (excluding cats)
   const backgrounds: Record<Exclude<BackgroundTheme, 'cats'>, React.ReactElement> = {
     'cherry-blossom': <CherryBlossomBackground {...props} />,
     'starry-night': <StarryNightBackground {...props} />,
