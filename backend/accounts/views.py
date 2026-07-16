@@ -329,6 +329,26 @@ def upload_profile_picture(request):
     if not image_file:
         return Response({'error': 'No image provided'}, status=400)
     
+    for_partner = request.query_params.get('for_partner', 'false') == 'true'
+    
+    if for_partner:
+        # Get the partner's profile
+        couple = request.user.profile.couple
+        if not couple:
+            return Response({'error': 'No couple found'}, status=400)
+        
+        members = list(couple.members.all())
+        partner = None
+        for member in members:
+            if member.user != request.user:
+                partner = member
+                break
+        
+        if not partner:
+            return Response({'error': 'Partner not found'}, status=404)
+        
+        profile = partner 
+    
     image_url = upload_to_supabase(image_file, folder='profile_pictures')
     
     if image_url:
