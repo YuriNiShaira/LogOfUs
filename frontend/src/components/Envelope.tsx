@@ -407,12 +407,13 @@ const Envelope: React.FC = () => {
     setUploadModalOpen(true);
   };
 
-  // ✅ UPDATED: Handle photo upload with query parameter for partner
+  // ✅ UPDATED: Handle photo upload with target as form data
   const handleUpload = async (file: File) => {
     const isMain = uploadType === 'main';
     const target = uploadTarget;
     
     console.log('📤 Uploading for target:', target);
+    console.log('📤 Upload type:', isMain ? 'main' : 'hover');
     
     if (isMain) setIsUploading(true);
     else setIsUploadingHover(true);
@@ -421,19 +422,17 @@ const Envelope: React.FC = () => {
       const formData = new FormData();
       const fieldName = isMain ? 'profile_picture' : 'hover_profile_picture';
       formData.append(fieldName, file);
+      
+      // ✅ Add target to form data - this tells the backend who to update
+      formData.append('target', target === 'partner2' ? 'partner' : 'self');
 
-      // ✅ Use the regular endpoint but add a query param for partner
+      // ✅ Use the regular endpoint with target parameter
       let endpoint = isMain 
         ? '/auth/upload-profile-picture/' 
         : '/auth/upload-hover-profile-picture/';
-      
-      // ✅ If uploading for partner 2, add a query parameter
-      if (target === 'partner2') {
-        endpoint = endpoint + '?for_partner=true';
-      }
 
       console.log('📡 Uploading to:', endpoint);
-      console.log('📎 File:', file.name, file.size, file.type);
+      console.log('📎 Target:', target);
 
       const response = await api.patch(endpoint, formData, {
         headers: { 
@@ -443,11 +442,18 @@ const Envelope: React.FC = () => {
 
       console.log('✅ Upload success:', response.data);
 
-      // Refetch both profiles
-      await refetchUserProfile();
-      await refetchPartnerProfile();
-      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-      queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
+      // ✅ Refetch the correct profile based on target
+      if (target === 'partner2') {
+        console.log('🔄 Refetching partner profile...');
+        await refetchPartnerProfile();
+        queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
+      } else {
+        console.log('🔄 Refetching user profile...');
+        await refetchUserProfile();
+        queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      }
+      
+      // ✅ Also invalidate couple info to update partner status
       queryClient.invalidateQueries({ queryKey: ['coupleInfo'] });
       
       toast.success(isMain ? 'Photo updated! 📸' : 'Hover photo updated! ✨');
@@ -463,8 +469,6 @@ const Envelope: React.FC = () => {
         errorMessage = 'File too large - please choose a smaller image';
       } else if (error.response?.status === 400) {
         errorMessage = error.response?.data?.error || 'Invalid file format';
-      } else if (error.response?.status === 404) {
-        errorMessage = 'Upload endpoint not found. Please contact support.';
       } else if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error.response?.data?.detail) {

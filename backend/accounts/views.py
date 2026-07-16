@@ -173,8 +173,6 @@ def get_couple_info(request):
     
     other_member = couple.members.exclude(user=request.user).first()
     data['partner_name'] = other_member.display_name if other_member else 'Waiting for partner...'
-    data['partner_profile_picture'] = other_member.profile_picture if other_member else None
-    data['partner_hover_profile_picture'] = other_member.hover_profile_picture if other_member else None
     
     return Response(data)
 
@@ -322,16 +320,16 @@ def update_couple(request):
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def upload_profile_picture(request):
-    """Upload profile picture for the current user"""
+    """Upload profile picture - supports both current user and partner"""
     profile = request.user.profile
     image_file = request.FILES.get('profile_picture')
     
     if not image_file:
         return Response({'error': 'No image provided'}, status=400)
     
-    for_partner = request.query_params.get('for_partner', 'false') == 'true'
+    target = request.data.get('target', 'self')
     
-    if for_partner:
+    if target == 'partner':
         # Get the partner's profile
         couple = request.user.profile.couple
         if not couple:
@@ -356,6 +354,7 @@ def upload_profile_picture(request):
         profile.save()
         return Response({
             'profile_picture': image_url,
+            'target': target,
             'message': 'Profile picture updated successfully!'
         })
     
@@ -365,14 +364,34 @@ def upload_profile_picture(request):
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def upload_hover_profile_picture(request):
-    """Upload hover profile picture for the current user"""
+    """Upload hover profile picture - supports both current user and partner"""
     profile = request.user.profile
     image_file = request.FILES.get('hover_profile_picture')
     
     if not image_file:
         return Response({'error': 'No image provided'}, status=400)
     
-    # Upload to Supabase
+
+    target = request.data.get('target', 'self')
+    
+    if target == 'partner':
+        # Get the partner's profile
+        couple = request.user.profile.couple
+        if not couple:
+            return Response({'error': 'No couple found'}, status=400)
+        
+        members = list(couple.members.all())
+        partner = None
+        for member in members:
+            if member.user != request.user:
+                partner = member
+                break
+        
+        if not partner:
+            return Response({'error': 'Partner not found'}, status=404)
+        
+        profile = partner  
+    
     image_url = upload_to_supabase(image_file, folder='profile_pictures/hover')
     
     if image_url:
@@ -380,13 +399,13 @@ def upload_hover_profile_picture(request):
         profile.save()
         return Response({
             'hover_profile_picture': image_url,
+            'target': target,
             'message': 'Hover profile picture updated successfully!'
         })
     
     return Response({'error': 'Failed to upload image'}, status=500)
 
 
-# ============= PARTNER ENDPOINTS =============
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -411,76 +430,4 @@ def partner_profile(request):
         'display_name': partner.display_name,
         'profile_picture': partner.profile_picture,
         'hover_profile_picture': partner.hover_profile_picture,
-    })
-
-
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def partner_upload_profile_picture(request):
-    """Upload profile picture for partner (the other member of the couple)"""
-    couple = request.user.profile.couple
-    if not couple:
-        return Response({'error': 'No couple found'}, status=400)
-    
-    # Get the partner (the other member of the couple)
-    members = list(couple.members.all())
-    partner = None
-    for member in members:
-        if member.user != request.user:
-            partner = member
-            break
-    
-    if not partner:
-        return Response({'error': 'Partner not found'}, status=404)
-    
-    image_file = request.FILES.get('profile_picture')
-    if not image_file:
-        return Response({'error': 'No image provided'}, status=400)
-    
-    image_url = upload_to_supabase(image_file, folder='profile_pictures')
-    if not image_url:
-        return Response({'error': 'Failed to upload image'}, status=500)
-    
-    partner.profile_picture = image_url
-    partner.save(update_fields=['profile_picture'])
-    
-    return Response({
-        'profile_picture': image_url,
-        'message': 'Partner profile picture updated successfully!'
-    })
-
-
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def partner_upload_hover_profile_picture(request):
-    """Upload hover profile picture for partner (the other member of the couple)"""
-    couple = request.user.profile.couple
-    if not couple:
-        return Response({'error': 'No couple found'}, status=400)
-    
-    # Get the partner (the other member of the couple)
-    members = list(couple.members.all())
-    partner = None
-    for member in members:
-        if member.user != request.user:
-            partner = member
-            break
-    
-    if not partner:
-        return Response({'error': 'Partner not found'}, status=404)
-    
-    image_file = request.FILES.get('hover_profile_picture')
-    if not image_file:
-        return Response({'error': 'No image provided'}, status=400)
-    
-    image_url = upload_to_supabase(image_file, folder='profile_pictures/hover')
-    if not image_url:
-        return Response({'error': 'Failed to upload image'}, status=500)
-    
-    partner.hover_profile_picture = image_url
-    partner.save(update_fields=['hover_profile_picture'])
-    
-    return Response({
-        'hover_profile_picture': image_url,
-        'message': 'Partner hover profile picture updated successfully!'
     })
