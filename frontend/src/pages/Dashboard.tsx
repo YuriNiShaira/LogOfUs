@@ -42,17 +42,14 @@ interface Stats {
   days_together: number;
 }
 
-// Loading fallback for lazy components
 const LoadingFallback = () => (
   <div className="flex justify-center items-center p-8">
     <div className="w-8 h-8 border-2 border-rose-300 border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
-// Lazy load heavy components
 const LoveLetterManager = lazy(() => import('../components/LoveLetterManager'));
 
-// Memoized components
 const LoadingSkeleton = React.memo(() => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
     {[...Array(3)].map((_, i) => (
@@ -64,7 +61,6 @@ const LoadingSkeleton = React.memo(() => (
     ))}
   </div>
 ));
-
 LoadingSkeleton.displayName = 'LoadingSkeleton';
 
 const FloatingHearts = React.memo(() => (
@@ -80,7 +76,6 @@ const FloatingHearts = React.memo(() => (
     ))}
   </div>
 ));
-
 FloatingHearts.displayName = 'FloatingHearts';
 
 const Dashboard: React.FC = () => {
@@ -100,11 +95,9 @@ const Dashboard: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true);
   const [enableCats, setEnableCats] = useState(true);
 
-  // OPTIMIZATION: Use cachedGet for faster loading
   const { data: yearsData, isLoading } = useQuery({
     queryKey: ['dashboard-data'],
     queryFn: async () => {
-      // Use cachedGet with parallel fetching
       const [yearsResponse, statsResponse] = await Promise.all([
         cachedGet('/years/'),
         cachedGet('/stats/'),
@@ -115,14 +108,12 @@ const Dashboard: React.FC = () => {
         stats: statsResponse,
       };
     },
-    staleTime: 60000, // 1 minute cache
+    staleTime: 60000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
   });
 
-  // OPTIMIZATION: Prefetch next page data
   useEffect(() => {
-    // Prefetch first year's data if available
     if (yearsData?.years && yearsData.years.length > 0) {
       const firstYearId = yearsData.years[0]?.id;
       if (firstYearId) {
@@ -131,17 +122,14 @@ const Dashboard: React.FC = () => {
     }
   }, [yearsData]);
 
-  // OPTIMIZATION: Memoize derived data
   const years = useMemo(() => yearsData?.years || [], [yearsData]);
   
-  // OPTIMIZATION: Update stats when data changes
   useEffect(() => {
     if (yearsData?.stats) {
       setStats(yearsData.stats);
     }
   }, [yearsData]);
 
-  // OPTIMIZATION: Fetch invite code separately (only when needed)
   const fetchInviteCode = useCallback(async () => {
     if (!user?.has_partner) {
       try {
@@ -153,7 +141,6 @@ const Dashboard: React.FC = () => {
     }
   }, [user]);
 
-  // Load cats setting
   useEffect(() => {
     const savedSettings = localStorage.getItem('user_settings');
     if (savedSettings) {
@@ -179,13 +166,11 @@ const Dashboard: React.FC = () => {
     if (!user?.has_partner) {
       fetchInviteCode();
     }
-    // Set initial loading false after data loads
     if (!isLoading) {
       setInitialLoading(false);
     }
   }, [fetchInviteCode, user, isLoading]);
 
-  // OPTIMIZATION: Memoized handlers
   const copyInviteCode = useCallback(async () => {
     if (!inviteCode) return;
     try {
@@ -202,13 +187,12 @@ const Dashboard: React.FC = () => {
   const handleCloseInviteModal = useCallback(() => setShowInviteModal(false), []);
   const handleOpenCreateYearModal = useCallback(() => setIsCreateYearModalOpen(true), []);
   const handleCloseCreateYearModal = useCallback(() => setIsCreateYearModalOpen(false), []);
+  
   const handleYearClick = useCallback((yearId: number) => {
     navigate(`/year/${yearId}`);
-    // Prefetch the year data for faster navigation next time
     prefetch(`/years/${yearId}/`);
   }, [navigate]);
 
-  // OPTIMIZATION: Memoize stats cards
   const statsCardsData = useMemo(() => [
     { icon: <Calendar className="w-6 h-6" />, label: "Days Together", value: stats.days_together, color: "from-love-red to-romantic-red" },
     { icon: <BookOpen className="w-6 h-6" />, label: "Years of Love", value: stats.total_years, color: "from-romantic-red to-deep-pink" },
@@ -220,7 +204,6 @@ const Dashboard: React.FC = () => {
   const showYearsGrid = !isLoading && years.length > 0;
   const isDarkMode = theme === 'dark';
 
-  // Show loading only on initial load
   if (initialLoading && isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -240,18 +223,33 @@ const Dashboard: React.FC = () => {
         .font-serif { font-family: 'Playfair Display', serif; }
         .font-script { font-family: 'Dancing Script', cursive; }
         .font-cormorant { font-family: 'Cormorant Garamond', serif; }
+        
+        .gallery-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .gallery-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .gallery-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(225, 29, 72, 0.3);
+          border-radius: 10px;
+        }
+        .dark .gallery-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(225, 29, 72, 0.4);
+        }
+        .gallery-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(225, 29, 72, 0.6);
+        }
       `}} />
 
       <RomanticBackground />
-      
-      {/* Cats overlay - only on dashboard and if enabled */}
       {enableCats && <CatsBackground />}
-
       <Navbar />
 
-      <div className="max-w-7xl mx-auto relative z-10 px-4 sm:px-6 py-4 sm:py-6">
+      {/* CHANGED: Wide container for the whole dashboard */}
+      <div className="max-w-[90rem] mx-auto relative z-10 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Welcome Header */}
-        <div className="mb-8 sm:mb-12 relative">
+        <div className="mb-8 sm:mb-12 relative max-w-7xl mx-auto">
           {user && !user.has_partner && (
             <div className="absolute right-0 top-0 hidden md:block">
               <button
@@ -310,26 +308,26 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Time Counter */}
-        <div className="mb-8 sm:mb-12">
+        <div className="mb-8 sm:mb-12 max-w-7xl mx-auto">
           <TimeCounter anniversaryDate={user?.anniversary_date || '2024-01-01'} />
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12 max-w-7xl mx-auto">
           {statsCardsData.map((card, index) => (
             <StatsCard key={index} {...card} />
           ))}
         </div>
 
         {/* Envelope */}
-        <div className="mb-12 sm:mb-16">
+        <div className="mb-12 sm:mb-16 max-w-7xl mx-auto">
           <Envelope />
         </div>
 
-        {/* Years Grid */}
+        {/* The Archive / Shadow Box Display Case */}
         <div>
-          <h2 className={`text-3xl sm:text-4xl font-serif text-center mb-6 sm:mb-8 tracking-wide ${isDarkMode ? 'text-rose-100' : 'text-rose-950'}`}>
-            <span className="text-gradient-soft">Our Journey Through The Years</span>
+          <h2 className={`text-3xl sm:text-4xl font-serif text-center mb-8 tracking-wide ${isDarkMode ? 'text-rose-100' : 'text-rose-950'}`}>
+            <span className="text-gradient-soft">The Memory Archive</span>
             <div className="h-px bg-linear-to-r from-transparent via-rose-300 to-transparent mx-auto mt-3 sm:mt-4 w-25" />
           </h2>
 
@@ -337,16 +335,80 @@ const Dashboard: React.FC = () => {
             <LoadingSkeleton />
           ) : showYearsGrid && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                {years.map((year: Year) => (
-                  <YearCard 
-                    key={year.id} 
-                    year={year} 
-                    onClick={() => handleYearClick(year.id)} 
-                  />
-                ))}
+              {/* CHANGED: Let the frame use the wide space, bounded slightly so it doesn't touch edges on ultra-wide */}
+              <div className="w-full max-w-[85rem] mx-auto px-2 sm:px-4">
+                
+                {/* 1. Outer Luxurious Casing */}
+                <div className={`relative p-3 sm:p-5 lg:p-6 rounded-[2.5rem] sm:rounded-[3.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all ${
+                  isDarkMode 
+                    ? 'bg-linear-to-br from-[#382825] via-[#1a1110] to-[#0a0605] border border-[#523b36]' 
+                    : 'bg-linear-to-br from-[#f0e6d3] via-[#e3d1b8] to-[#d4bca0] border border-[#f5ecd9]'
+                }`}>
+                  
+                  {/* 2. Inner Metallic Bevel (Rose Gold / Brass) */}
+                  <div className={`relative p-2 sm:p-4 rounded-[1.8rem] sm:rounded-[2.8rem] border-[3px] shadow-inner ${
+                    isDarkMode ? 'border-[#8c6b5d]/60 bg-[#140e0d]' : 'border-[#d4a39a]/70 bg-[#faf6f0]'
+                  }`}>
+                    
+                    {/* Brass Title Plate */}
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-1.5 rounded-sm shadow-md border z-20" style={{
+                      background: isDarkMode ? 'linear-gradient(to right, #a67c52, #e3c4a8, #a67c52)' : 'linear-gradient(to right, #d4a39a, #f7dfdb, #d4a39a)',
+                      borderColor: isDarkMode ? '#5c432b' : '#b38279'
+                    }}>
+                      <span className={`text-[10px] sm:text-xs font-sans font-bold tracking-[0.3em] uppercase ${isDarkMode ? 'text-[#382618]' : 'text-[#5e3831]'}`}>
+                        Our Volumes
+                      </span>
+                      {/* Tiny screws for the plate */}
+                      <div className={`absolute top-1/2 -translate-y-1/2 left-2 w-1.5 h-1.5 rounded-full ${isDarkMode ? 'bg-[#5c432b]' : 'bg-[#b38279]'}`} />
+                      <div className={`absolute top-1/2 -translate-y-1/2 right-2 w-1.5 h-1.5 rounded-full ${isDarkMode ? 'bg-[#5c432b]' : 'bg-[#b38279]'}`} />
+                    </div>
+
+                    {/* 3. Deep Recessed Backdrop (Velvet or Parchment) */}
+                    <div className={`relative rounded-[1.2rem] sm:rounded-[2.2rem] overflow-hidden shadow-[inset_0_20px_50px_rgba(0,0,0,0.4)] pt-8 ${
+                      isDarkMode 
+                        ? 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#361e23] via-[#1a0f12] to-[#0a0507]' 
+                        : 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#ffffff] via-[#f7f3ec] to-[#e8dec9]'
+                    }`}>
+                      
+                      {/* Corner Ornaments */}
+                      <div className={`absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 rounded-tl-xl opacity-40 pointer-events-none ${isDarkMode ? 'border-rose-300' : 'border-rose-800'}`} />
+                      <div className={`absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 rounded-tr-xl opacity-40 pointer-events-none ${isDarkMode ? 'border-rose-300' : 'border-rose-800'}`} />
+                      <div className={`absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 rounded-bl-xl opacity-40 pointer-events-none ${isDarkMode ? 'border-rose-300' : 'border-rose-800'}`} />
+                      <div className={`absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 rounded-br-xl opacity-40 pointer-events-none ${isDarkMode ? 'border-rose-300' : 'border-rose-800'}`} />
+
+                      {/* 4. Scrollable Content Area */}
+                      <div 
+                        className="gallery-scrollbar overflow-y-auto px-4 sm:px-8 lg:px-12 py-8"
+                        style={{ 
+                          height: '700px',
+                          maskImage: 'linear-gradient(to bottom, transparent, black 5%, black 95%, transparent)',
+                          WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 5%, black 95%, transparent)'
+                        }}
+                      >
+                        <div className="relative">
+                          {/* CHANGED: Strictly limited to 3 columns max, but widened the gaps heavily for larger screens */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-8 sm:gap-x-12 lg:gap-x-16 xl:gap-x-20 pb-10">
+                            {years.map((year: Year) => (
+                              <div key={year.id} className="relative group flex justify-center pt-6">
+                                {/* Spotlight reflecting inside the glass case */}
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-40 h-32 bg-white/20 dark:bg-rose-400/10 blur-[40px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none z-0" />
+                                
+                                {/* The Bound Volume */}
+                                <YearCard 
+                                  year={year as any} 
+                                  onClick={() => handleYearClick(year.id)} 
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Add Year Button outside the frame */}
               <div className="mt-12 sm:mt-16 text-center flex justify-center">
                 <button
                   onClick={handleOpenCreateYearModal}
@@ -360,7 +422,7 @@ const Dashboard: React.FC = () => {
                   
                   <span className={`relative z-10 flex items-center gap-2 sm:gap-3 font-serif uppercase tracking-[0.15em] sm:tracking-[0.2em] text-[10px] sm:text-xs font-bold ${isDarkMode ? 'text-rose-200' : 'text-rose-800'}`}>
                     <Sparkles className={`w-3 h-3 sm:w-4 sm:h-4 transform group-hover:scale-110 transition-transform ${isDarkMode ? 'text-rose-400' : 'text-rose-400'}`} />
-                    Begin a New Chapter
+                    Place a New Volume
                     <Sparkles className={`w-3 h-3 sm:w-4 sm:h-4 transform group-hover:scale-110 transition-transform ${isDarkMode ? 'text-rose-400' : 'text-rose-400'}`} />
                   </span>
                 </button>
@@ -374,10 +436,10 @@ const Dashboard: React.FC = () => {
                 <Heart className="w-16 sm:w-20 h-16 sm:h-20 text-rose-300/50 mx-auto mb-4 sm:mb-6" />
               </div>
               <h3 className={`text-xl sm:text-2xl font-serif mb-2 sm:mb-3 ${isDarkMode ? 'text-rose-200' : 'text-rose-800'}`}>
-                Start Your Love Story
+                The Display Case is Empty
               </h3>
               <p className={`mb-6 sm:mb-8 font-serif italic text-sm sm:text-base ${isDarkMode ? 'text-rose-300/70' : 'text-rose-700/60'}`}>
-                Create your first year to begin capturing beautiful memories together
+                Create your first volume to begin capturing beautiful memories together.
               </p>
               
               <button
@@ -389,8 +451,8 @@ const Dashboard: React.FC = () => {
                 }`}
               >
                 <div className="absolute inset-1 border border-dashed rounded-full opacity-30 pointer-events-none border-rose-200" />
-                <span className="relative z-10 flex items-center gap-2 font-serif uppercase tracking-widest text-xs sm:text-2.75">
-                  Pen the First Page <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-rose-300" />
+                <span className="relative z-10 flex items-center gap-2 font-serif uppercase tracking-widest text-xs">
+                  Place the First Volume <Sparkles className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-rose-300" />
                 </span>
               </button>
             </div>
@@ -467,7 +529,7 @@ const Dashboard: React.FC = () => {
                 {inviteCode || '...'}
               </span>
               
-              <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-2.5 font-bold uppercase tracking-wider transition-all duration-200 ${
+              <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
                 copied 
                   ? 'opacity-100 bg-emerald-500 text-white shadow-md transform -translate-y-1' 
                   : 'opacity-0 group-hover:opacity-100 bg-stone-200 text-stone-600 transform translate-y-0'

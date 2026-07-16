@@ -1,15 +1,12 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Power, Trash2, UploadCloud, Camera as CameraIcon, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Circle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface UploadPhotoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpload: (file: File) => Promise<void>;
-  title?: string;
-  description?: string;
-  buttonText?: string;
   accept?: string;
   maxSize?: number; // in MB
 }
@@ -18,55 +15,71 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
   isOpen,
   onClose,
   onUpload,
-  title = 'Upload Photo',
-  description = 'Choose a photo to upload',
-  buttonText = 'Upload',
   accept = 'image/*',
   maxSize = 5,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // Lock background scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  const processFile = (file?: File) => {
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
+      toast.error('Format not supported by camera.');
       return;
     }
 
-    // Validate file size
     if (file.size > maxSize * 1024 * 1024) {
-      toast.error(`Image must be less than ${maxSize}MB`);
+      toast.error(`Memory Card Full: File exceeds ${maxSize}MB`);
       return;
     }
 
     setSelectedFile(file);
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result as string);
-    };
+    reader.onloadend = () => setPreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      toast.error('Please select a photo first');
-      return;
-    }
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
 
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    processFile(e.dataTransfer.files?.[0]);
+  }, []);
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
     setIsUploading(true);
     try {
       await onUpload(selectedFile);
-      setSelectedFile(null);
-      setPreview(null);
-      onClose();
-    } catch (error) {
-      // Error is handled in the parent component
+      handleClose();
+    } catch {
+      toast.error('Upload Failed');
     } finally {
       setIsUploading(false);
     }
@@ -75,6 +88,8 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
   const handleClose = () => {
     setSelectedFile(null);
     setPreview(null);
+    setIsDragging(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     onClose();
   };
 
@@ -85,115 +100,182 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/80 p-4 select-none"
           onClick={handleClose}
         >
           <motion.div
-            initial={{ scale: 0.9, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-white dark:bg-stone-900 rounded-2xl shadow-2xl overflow-hidden"
+            initial={{ scale: 0.85, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.85, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            // CAMERA BODY - added max-h-[90vh] to prevent it from ever growing larger than the screen
+            className="relative flex w-full max-w-4xl aspect-[16/10] sm:aspect-[16/9] max-h-[90vh] bg-[#2a2b2e] rounded-[32px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.2)] border border-[#1a1a1c]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-stone-700">
-              <div>
-                <h3 className="text-xl font-serif text-gray-800 dark:text-stone-200">
-                  {title}
-                </h3>
-                <p className="text-sm font-serif italic text-gray-500 dark:text-stone-400">
-                  {description}
-                </p>
-              </div>
-              <button
-                onClick={handleClose}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-stone-800 transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500 dark:text-stone-400" />
-              </button>
+            {/* Viewfinder Bump (Top Center) */}
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-48 h-8 bg-[#2a2b2e] rounded-t-2xl shadow-[inset_0_2px_2px_rgba(255,255,255,0.15)] flex justify-center items-end pb-1 border-t border-l border-r border-[#444]">
+              <div className="w-16 h-4 bg-[#111] rounded shadow-inner"></div>
             </div>
 
-            {/* Body */}
-            <div className="p-6 space-y-4">
-              {/* Preview Area */}
-              <div 
-                className={`
-                  relative w-full aspect-square rounded-lg overflow-hidden border-2 border-dashed
-                  ${preview ? 'border-transparent' : 'border-gray-300 dark:border-stone-600'}
-                  bg-gray-50 dark:bg-stone-800/50
-                  flex items-center justify-center
-                `}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {preview ? (
-                  <img 
-                    src={preview} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-stone-500">
-                    <ImageIcon className="w-12 h-12" />
-                    <p className="text-sm font-serif italic">Tap to select a photo</p>
-                    <p className="text-xs font-serif">or drag and drop</p>
-                  </div>
-                )}
-              </div>
+            {/* Strap loops */}
+            <div className="absolute top-12 -left-3 w-4 h-8 bg-zinc-400 rounded-l-md border border-zinc-500 shadow-md"></div>
+            <div className="absolute top-12 -right-3 w-4 h-8 bg-zinc-400 rounded-r-md border border-zinc-500 shadow-md"></div>
 
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={accept}
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-
-              {/* File info */}
-              {selectedFile && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-serif text-gray-600 dark:text-stone-300 truncate">
-                    {selectedFile.name}
-                  </span>
-                  <span className="text-gray-400 dark:text-stone-500">
-                    {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
-                  </span>
+            {/* Left side: Screen area - added min-h-0 to allow shrinking */}
+            <div className="flex-1 p-6 sm:p-8 flex flex-col min-h-0">
+              {/* LCD Screen Bezel - added min-h-0 */}
+              <div className="flex-1 bg-[#111] p-3 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] border border-[#222] flex flex-col min-h-0 relative">
+                
+                {/* Brand / Model text above screen */}
+                <div className="text-center text-[#555] text-[10px] font-black uppercase tracking-widest mb-2 font-sans shrink-0">
+                  LUMINA X-1
                 </div>
-              )}
 
-              {/* Upload button */}
-              <button
-                onClick={handleUpload}
-                disabled={!selectedFile || isUploading}
-                className={`
-                  w-full py-3 rounded-lg font-serif font-bold transition-all
-                  flex items-center justify-center gap-2
-                  ${selectedFile && !isUploading
-                    ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-md hover:shadow-lg'
-                    : 'bg-gray-200 dark:bg-stone-700 text-gray-400 dark:text-stone-500 cursor-not-allowed'
-                  }
-                `}
-              >
-                {isUploading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    {buttonText}
-                  </>
-                )}
-              </button>
+                {/* Actual LCD Screen - added min-h-0 */}
+                <div 
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                  onClick={() => !preview && fileInputRef.current?.click()}
+                  className={`
+                    flex-1 bg-black rounded shadow-[inset_0_0_20px_rgba(0,0,0,1)] relative overflow-hidden flex items-center justify-center min-h-0
+                    ${!preview ? 'cursor-pointer' : ''}
+                    ${isDragging ? 'ring-2 ring-red-500' : ''}
+                  `}
+                >
+                  {/* The Image */}
+                  {preview ? (
+                    <img 
+                      src={preview} 
+                      alt="Viewfinder" 
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center text-zinc-600 space-y-3">
+                      <CameraIcon className="w-12 h-12 opacity-50" />
+                      <p className="font-mono text-xs text-center uppercase tracking-wider">
+                        Insert SD Card <br/> (Click or Drag Image)
+                      </p>
+                    </div>
+                  )}
+
+                  {/* UI Overlay on Screen */}
+                  {preview && (
+                    <div className="absolute inset-0 pointer-events-none p-3 flex flex-col justify-between font-mono text-[10px] text-white drop-shadow-md">
+                      <div className="flex justify-between">
+                        <span className="text-red-500 font-bold flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                          REC
+                        </span>
+                        <span>100%</span>
+                      </div>
+                      <div className="flex justify-between items-end">
+                        <div className="flex flex-col">
+                          <span>F1.8</span>
+                          <span>1/1000</span>
+                          <span>ISO 400</span>
+                        </div>
+                        <div className="text-right text-green-400">
+                          RAW+JPEG <br/> [OK]
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 bg-gray-50 dark:bg-stone-800/50 border-t border-gray-200 dark:border-stone-700">
-              <p className="text-xs font-serif text-gray-400 dark:text-stone-500 text-center">
-                Supported formats: JPG, PNG, WEBP • Max size: {maxSize}MB
-              </p>
+            {/* Right side: Physical Grip & Buttons */}
+            <div className="w-32 sm:w-48 bg-[#1f1f21] rounded-r-[32px] shadow-[inset_10px_0_20px_rgba(0,0,0,0.5)] border-l border-[#111] p-4 flex flex-col items-center justify-between relative overflow-hidden shrink-0">
+              
+              {/* Fake leather texture pattern overlay */}
+              <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '4px 4px' }}></div>
+
+              {/* Top: Power Button */}
+              <div className="relative z-10 w-full flex justify-end">
+                <button 
+                  onClick={handleClose}
+                  className="w-8 h-8 rounded-full bg-[#111] border border-[#333] shadow-[0_2px_4px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-[#222] active:scale-95 transition-all"
+                  title="Power Off (Close)"
+                >
+                  <Power className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Middle: D-Pad & Delete Button */}
+              <div className="relative z-10 flex flex-col items-center gap-4 w-full">
+                
+                {/* Centered Delete Button */}
+                <div className="flex justify-center w-full px-2">
+                  <button 
+                    onClick={() => {
+                      if (preview && !isUploading) {
+                        setPreview(null);
+                        setSelectedFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }
+                    }}
+                    className={`text-[9px] font-bold flex flex-col items-center
+                      ${preview ? 'text-zinc-400 hover:text-red-400' : 'text-zinc-700 cursor-not-allowed'}
+                    `}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-[#222] shadow-[0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center mb-1">
+                      <Trash2 className="w-3 h-3" />
+                    </div>
+                    DEL
+                  </button>
+                </div>
+
+                {/* Circular D-Pad */}
+                <div className="w-24 h-24 rounded-full bg-[#1a1a1c] shadow-[0_4px_10px_rgba(0,0,0,0.8),inset_0_2px_5px_rgba(255,255,255,0.05)] border border-[#111] relative flex items-center justify-center mt-2">
+                  {/* Directional Arrows */}
+                  <ChevronUp className="absolute top-1 w-4 h-4 text-zinc-600" />
+                  <ChevronRight className="absolute right-1 w-4 h-4 text-zinc-600" />
+                  <ChevronDown className="absolute bottom-1 w-4 h-4 text-zinc-600" />
+                  <ChevronLeft className="absolute left-1 w-4 h-4 text-zinc-600" />
+                  
+                  {/* Center OK button */}
+                  <div className="w-10 h-10 rounded-full bg-[#2a2a2d] border border-[#111] shadow-[0_2px_4px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.1)] flex items-center justify-center text-[10px] font-bold text-zinc-500">
+                    OK
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom: Big Shutter/Upload Button */}
+              <div className="relative z-10 w-full flex flex-col items-center gap-2">
+                <button
+                  onClick={preview ? handleUpload : () => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className={`
+                    w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200
+                    shadow-[0_5px_15px_rgba(0,0,0,0.6),inset_0_1px_2px_rgba(255,255,255,0.3)]
+                    border-[3px] border-[#444]
+                    ${preview 
+                      ? 'bg-gradient-to-b from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 active:scale-95' 
+                      : 'bg-gradient-to-b from-zinc-600 to-zinc-800 hover:from-zinc-500 hover:to-zinc-700 active:scale-95'}
+                    ${isUploading ? 'opacity-70 cursor-wait' : ''}
+                  `}
+                >
+                  {isUploading ? (
+                    <Circle className="w-6 h-6 text-white animate-spin" />
+                  ) : (
+                    <UploadCloud className={`w-6 h-6 ${preview ? 'text-white' : 'text-zinc-400'}`} />
+                  )}
+                </button>
+                <span className="text-[10px] font-bold text-zinc-400 tracking-wider">
+                  {preview ? 'UPLOAD' : 'SELECT'}
+                </span>
+              </div>
             </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={accept}
+              onChange={(e) => processFile(e.target.files?.[0])}
+              className="hidden"
+            />
           </motion.div>
         </motion.div>
       )}
