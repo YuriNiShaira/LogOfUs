@@ -20,6 +20,8 @@ import {
   Check,
   Moon,
   Sun,
+  Smartphone,
+  Monitor,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -87,6 +89,9 @@ const SettingsDropdown: React.FC = () => {
 
   // Background theme state
   const [currentBackground, setCurrentBackground] = useState<BackgroundTheme>('cherry-blossom');
+  
+  // Check if on mobile
+  const [isMobile, setIsMobile] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -97,6 +102,16 @@ const SettingsDropdown: React.FC = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Check mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   // Fetch profile data
@@ -162,6 +177,14 @@ const SettingsDropdown: React.FC = () => {
 
   // Handle setting toggle with storage event
   const handleSettingToggle = (key: keyof typeof settings) => {
+    // Prevent enabling cats on mobile
+    if (key === 'enableCats' && isMobile && !settings[key]) {
+      toast.error('Cat stickers are only available on desktop! 🐱💻', {
+        duration: 3000,
+      });
+      return;
+    }
+    
     const newValue = !settings[key];
     const newSettings = { ...settings, [key]: newValue };
     setSettings(newSettings);
@@ -746,16 +769,28 @@ const SettingsDropdown: React.FC = () => {
                             </button>
                           </div>
 
-                          {/* Show Cats */}
+                          {/* Show Cats - with mobile notice */}
                           <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
                             <div>
-                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
-                                <Cat className="inline w-4 h-4 mr-2 text-amber-400" />
-                                Show Cats
-                              </p>
-                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                                Cute cat stickers roaming around
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <Cat className="inline w-4 h-4 text-amber-400" />
+                                <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                                  Show Cats
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                                  Cute cat stickers roaming around
+                                </p>
+                                {isMobile && (
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                                    isDark ? 'bg-amber-900/30 text-amber-400 border border-amber-700/30' : 'bg-amber-100 text-amber-700 border border-amber-200'
+                                  }`}>
+                                    <Smartphone className="w-2.5 h-2.5" />
+                                    Desktop only
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <button
                               onClick={() => handleSettingToggle('enableCats')}

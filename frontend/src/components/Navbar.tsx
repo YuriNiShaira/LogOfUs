@@ -64,7 +64,7 @@ const Navbar: React.FC = () => {
       // Silent fail
     }
     logout();
-    toast.success('See you soon! 💕');
+    toast.success('See you soon!');
     navigate('/login');
   };
 
@@ -303,7 +303,7 @@ const Navbar: React.FC = () => {
               <p className={`text-xs leading-none font-serif italic font-medium transition-colors duration-300 ${
                 isDark ? 'text-amber-300/75' : 'text-amber-700/65'
               }`}>
-                {user?.couple_name || 'Loading...'} 💕
+                {user?.couple_name || 'Loading...'}
               </p>
             </div>
           </motion.div>
@@ -427,7 +427,7 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation Menu */}
+        {/* Mobile Navigation Menu - Updated with optimizations */}
         <AnimatePresence>
           {isNavOpen && (
             <motion.div
@@ -442,7 +442,9 @@ const Navbar: React.FC = () => {
               } backdrop-blur-xl`}
             >
               <div className="mobile-nav-ribbon" />
-              <div className="px-6 py-4 space-y-1">
+              
+              {/* Reduced padding on mobile */}
+              <div className="px-4 sm:px-6 py-4 space-y-1">
                 {navItems.map((item, idx) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
@@ -458,7 +460,7 @@ const Navbar: React.FC = () => {
                         navigate(item.path);
                         setIsNavOpen(false);
                       }}
-                      className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-lg transition-all relative group font-semibold tracking-wide ${
+                      className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg transition-all relative group font-semibold tracking-wide text-sm ${
                         active
                           ? `${isDark 
                               ? 'bg-red-950/50 text-red-400 shadow-md shadow-red-900/20' 
@@ -481,11 +483,11 @@ const Navbar: React.FC = () => {
                   );
                 })}
 
-                {/* Mobile Background Theme Selector */}
+                {/* Mobile Background Theme Selector - Compact grid on mobile */}
                 <div className={`my-2 page-divider ${isDark ? 'text-amber-700' : 'text-amber-300'}`} />
                 
-                <div className="px-2 py-1">
-                  <p className={`text-xs font-serif uppercase tracking-wider mb-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                <div className="px-1 py-1">
+                  <p className={`text-[10px] font-serif uppercase tracking-wider mb-1.5 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                     Background Theme
                   </p>
                   <div className="grid grid-cols-2 gap-1">
@@ -499,15 +501,15 @@ const Navbar: React.FC = () => {
                             handleBackgroundChange(bgTheme.id);
                             setIsNavOpen(false);
                           }}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
+                          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all text-xs ${
                             isActive
                               ? isDark ? 'bg-rose-900/50 text-rose-300' : 'bg-rose-100 text-rose-700'
                               : isDark ? 'hover:bg-stone-700 text-stone-300' : 'hover:bg-stone-100 text-stone-700'
                           }`}
                         >
                           <Icon className="w-3 h-3" />
-                          <span className="flex-1 text-left text-xs truncate">{bgTheme.label}</span>
-                          {isActive && <Check size={12} className="text-rose-500 flex-shrink-0" />}
+                          <span className="flex-1 text-left text-[10px] truncate">{bgTheme.label}</span>
+                          {isActive && <Check size={10} className="text-rose-500 flex-shrink-0" />}
                         </button>
                       );
                     })}
@@ -526,7 +528,7 @@ const Navbar: React.FC = () => {
                     handleLogout();
                     setIsNavOpen(false);
                   }}
-                  className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-lg transition-all font-semibold tracking-wide ${
+                  className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg transition-all font-semibold tracking-wide text-sm ${
                     isDark
                       ? 'text-amber-200/75 hover:bg-amber-900/50'
                       : 'text-amber-800/75 hover:bg-amber-100/60'

@@ -94,6 +94,17 @@ const Dashboard: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [enableCats, setEnableCats] = useState(true);
+  const [isMobile, setIsMobile] = useState(false); // Add mobile detection state
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const { data: yearsData, isLoading } = useQuery({
     queryKey: ['dashboard-data'],
@@ -176,7 +187,7 @@ const Dashboard: React.FC = () => {
     try {
       await navigator.clipboard.writeText(inviteCode);
       setCopied(true);
-      toast.success('Invite code copied! Share it with your partner 💕');
+      toast.success('Invite code copied! Share it with your partner');
       setTimeout(() => setCopied(false), 2500);
     } catch {
       toast.error('Failed to copy code');
@@ -243,10 +254,12 @@ const Dashboard: React.FC = () => {
       `}} />
 
       <RomanticBackground />
-      {enableCats && <CatsBackground />}
+      
+      {/* Cats overlay - only on desktop (not mobile) */}
+      {!isMobile && enableCats && <CatsBackground />}
+      
       <Navbar />
 
-      {/* CHANGED: Wide container for the whole dashboard */}
       <div className="max-w-[90rem] mx-auto relative z-10 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Welcome Header */}
         <div className="mb-8 sm:mb-12 relative max-w-7xl mx-auto">
@@ -335,22 +348,18 @@ const Dashboard: React.FC = () => {
             <LoadingSkeleton />
           ) : showYearsGrid && (
             <>
-              {/* CHANGED: Let the frame use the wide space, bounded slightly so it doesn't touch edges on ultra-wide */}
               <div className="w-full max-w-[85rem] mx-auto px-2 sm:px-4">
                 
-                {/* 1. Outer Luxurious Casing */}
                 <div className={`relative p-3 sm:p-5 lg:p-6 rounded-[2.5rem] sm:rounded-[3.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all ${
                   isDarkMode 
                     ? 'bg-linear-to-br from-[#382825] via-[#1a1110] to-[#0a0605] border border-[#523b36]' 
                     : 'bg-linear-to-br from-[#f0e6d3] via-[#e3d1b8] to-[#d4bca0] border border-[#f5ecd9]'
                 }`}>
                   
-                  {/* 2. Inner Metallic Bevel (Rose Gold / Brass) */}
                   <div className={`relative p-2 sm:p-4 rounded-[1.8rem] sm:rounded-[2.8rem] border-[3px] shadow-inner ${
                     isDarkMode ? 'border-[#8c6b5d]/60 bg-[#140e0d]' : 'border-[#d4a39a]/70 bg-[#faf6f0]'
                   }`}>
                     
-                    {/* Brass Title Plate */}
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-1.5 rounded-sm shadow-md border z-20" style={{
                       background: isDarkMode ? 'linear-gradient(to right, #a67c52, #e3c4a8, #a67c52)' : 'linear-gradient(to right, #d4a39a, #f7dfdb, #d4a39a)',
                       borderColor: isDarkMode ? '#5c432b' : '#b38279'
@@ -358,25 +367,21 @@ const Dashboard: React.FC = () => {
                       <span className={`text-[10px] sm:text-xs font-sans font-bold tracking-[0.3em] uppercase ${isDarkMode ? 'text-[#382618]' : 'text-[#5e3831]'}`}>
                         Our Volumes
                       </span>
-                      {/* Tiny screws for the plate */}
                       <div className={`absolute top-1/2 -translate-y-1/2 left-2 w-1.5 h-1.5 rounded-full ${isDarkMode ? 'bg-[#5c432b]' : 'bg-[#b38279]'}`} />
                       <div className={`absolute top-1/2 -translate-y-1/2 right-2 w-1.5 h-1.5 rounded-full ${isDarkMode ? 'bg-[#5c432b]' : 'bg-[#b38279]'}`} />
                     </div>
 
-                    {/* 3. Deep Recessed Backdrop (Velvet or Parchment) */}
                     <div className={`relative rounded-[1.2rem] sm:rounded-[2.2rem] overflow-hidden shadow-[inset_0_20px_50px_rgba(0,0,0,0.4)] pt-8 ${
                       isDarkMode 
                         ? 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#361e23] via-[#1a0f12] to-[#0a0507]' 
                         : 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#ffffff] via-[#f7f3ec] to-[#e8dec9]'
                     }`}>
                       
-                      {/* Corner Ornaments */}
                       <div className={`absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 rounded-tl-xl opacity-40 pointer-events-none ${isDarkMode ? 'border-rose-300' : 'border-rose-800'}`} />
                       <div className={`absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 rounded-tr-xl opacity-40 pointer-events-none ${isDarkMode ? 'border-rose-300' : 'border-rose-800'}`} />
                       <div className={`absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 rounded-bl-xl opacity-40 pointer-events-none ${isDarkMode ? 'border-rose-300' : 'border-rose-800'}`} />
                       <div className={`absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 rounded-br-xl opacity-40 pointer-events-none ${isDarkMode ? 'border-rose-300' : 'border-rose-800'}`} />
 
-                      {/* 4. Scrollable Content Area */}
                       <div 
                         className="gallery-scrollbar overflow-y-auto px-4 sm:px-8 lg:px-12 py-8"
                         style={{ 
@@ -386,14 +391,11 @@ const Dashboard: React.FC = () => {
                         }}
                       >
                         <div className="relative">
-                          {/* CHANGED: Strictly limited to 3 columns max, but widened the gaps heavily for larger screens */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-8 sm:gap-x-12 lg:gap-x-16 xl:gap-x-20 pb-10">
                             {years.map((year: Year) => (
                               <div key={year.id} className="relative group flex justify-center pt-6">
-                                {/* Spotlight reflecting inside the glass case */}
                                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-40 h-32 bg-white/20 dark:bg-rose-400/10 blur-[40px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none z-0" />
                                 
-                                {/* The Bound Volume */}
                                 <YearCard 
                                   year={year as any} 
                                   onClick={() => handleYearClick(year.id)} 
@@ -408,7 +410,6 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Add Year Button outside the frame */}
               <div className="mt-12 sm:mt-16 text-center flex justify-center">
                 <button
                   onClick={handleOpenCreateYearModal}
