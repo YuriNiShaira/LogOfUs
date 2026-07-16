@@ -407,13 +407,12 @@ const Envelope: React.FC = () => {
     setUploadModalOpen(true);
   };
 
-  // ✅ FIX: Handle photo upload with correct target
+  // ✅ UPDATED: Handle photo upload with query parameter for partner
   const handleUpload = async (file: File) => {
     const isMain = uploadType === 'main';
     const target = uploadTarget;
     
     console.log('📤 Uploading for target:', target);
-    console.log('📤 Upload type:', isMain ? 'main' : 'hover');
     
     if (isMain) setIsUploading(true);
     else setIsUploadingHover(true);
@@ -423,16 +422,14 @@ const Envelope: React.FC = () => {
       const fieldName = isMain ? 'profile_picture' : 'hover_profile_picture';
       formData.append(fieldName, file);
 
-      // ✅ CORRECT ENDPOINTS based on target
-      let endpoint;
+      // ✅ Use the regular endpoint but add a query param for partner
+      let endpoint = isMain 
+        ? '/auth/upload-profile-picture/' 
+        : '/auth/upload-hover-profile-picture/';
+      
+      // ✅ If uploading for partner 2, add a query parameter
       if (target === 'partner2') {
-        endpoint = isMain 
-          ? '/auth/partner/upload-profile-picture/' 
-          : '/auth/partner/upload-hover-profile-picture/';
-      } else {
-        endpoint = isMain 
-          ? '/auth/upload-profile-picture/' 
-          : '/auth/upload-hover-profile-picture/';
+        endpoint = endpoint + '?for_partner=true';
       }
 
       console.log('📡 Uploading to:', endpoint);
@@ -446,18 +443,11 @@ const Envelope: React.FC = () => {
 
       console.log('✅ Upload success:', response.data);
 
-      // ✅ FIX: Refetch the correct profile after upload
-      if (target === 'partner2') {
-        console.log('🔄 Refetching partner profile...');
-        await refetchPartnerProfile();
-        queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
-      } else {
-        console.log('🔄 Refetching user profile...');
-        await refetchUserProfile();
-        queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-      }
-      
-      // ✅ Also invalidate couple info to update partner status
+      // Refetch both profiles
+      await refetchUserProfile();
+      await refetchPartnerProfile();
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
       queryClient.invalidateQueries({ queryKey: ['coupleInfo'] });
       
       toast.success(isMain ? 'Photo updated! 📸' : 'Hover photo updated! ✨');
