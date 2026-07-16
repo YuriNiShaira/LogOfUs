@@ -49,7 +49,6 @@ const Navbar: React.FC = () => {
     { icon: Gamepad2, label: 'Games', path: '/games' },
   ];
 
-  // Load saved background theme
   useEffect(() => {
     const saved = localStorage.getItem('backgroundTheme') as BackgroundTheme;
     if (saved) {

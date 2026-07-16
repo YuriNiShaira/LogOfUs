@@ -340,7 +340,7 @@ const CatsBackground: React.FC = () => {
         ))}
       </div>
 
-      {/* TOP LAYER - Cats 20-25 (always on top, scrollable) */}
+      {/* TOP LAYER - Cats 20-25 */}
       <div
         style={{
           position: 'absolute',

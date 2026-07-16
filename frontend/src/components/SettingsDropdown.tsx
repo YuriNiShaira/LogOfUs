@@ -151,7 +151,6 @@ const SettingsDropdown: React.FC = () => {
         const parsed = JSON.parse(savedSettings);
         setSettings(prev => ({ ...prev, ...parsed }));
       } catch (e) {
-        // ignore
       }
     }
 
