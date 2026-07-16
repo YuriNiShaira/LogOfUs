@@ -72,7 +72,6 @@ const ModernFrame: React.FC<{
   const hasHoverImage = !!hoverImageUrl && hoverImageUrl.trim() !== '' && hoverImageUrl !== primaryImage;
   const showHoverImage = isHovering && hasHoverImage;
 
-  // Partner 2 gets blue accents instead of rose
   const accentHoverClass = isPartner2 
     ? 'hover:from-blue-50/90 hover:via-white/90 hover:to-blue-50/90' 
     : 'hover:from-rose-50/90 hover:via-white/90 hover:to-rose-50/90';
@@ -146,7 +145,7 @@ const ModernFrame: React.FC<{
             {hasHoverImage && primaryImage && (
               <div 
                 className={`
-                  absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent 
+                  absolute inset-0 bg-linear-to-tr from-transparent via-white/10 to-transparent 
                   transition-opacity duration-700 pointer-events-none
                   ${showHoverImage ? 'opacity-100' : 'opacity-0'}
                 `}
@@ -161,7 +160,7 @@ const ModernFrame: React.FC<{
                   onUpload();
                 }}
                 className={`absolute inset-0 w-full h-full flex flex-col items-center justify-center z-10 
-                           bg-gradient-to-b from-gray-50/90 via-white/80 to-gray-100/90 backdrop-blur-sm
+                           bg-linear-to-b from-gray-50/90 via-white/80 to-gray-100/90 backdrop-blur-sm
                            ${accentHoverClass} transition-all duration-500
                            cursor-pointer group focus:outline-none ${accentRingClass}`}
                 aria-label="Upload main photo"
@@ -219,7 +218,7 @@ const ModernFrame: React.FC<{
                     <Sparkles className="h-2.5 w-2.5 text-amber-300/50" />
                   </motion.div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-gray-100/40 to-transparent pointer-events-none" />
+                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-linear-to-t from-gray-100/40 to-transparent pointer-events-none" />
               </button>
             )}
 
@@ -600,15 +599,11 @@ const Envelope: React.FC = () => {
         }
       `}</style>
 
+      {/* ✅ FIXED: Removed 'title', 'description', 'buttonText' props that don't exist */}
       <UploadPhotoModal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
         onUpload={handleUpload}
-        title={uploadType === 'main' ? 'Upload Main Photo' : 'Upload Hover Photo'}
-        description={uploadType === 'main' 
-          ? 'This photo will be shown by default'
-          : 'This photo will appear when someone hovers over the frame'}
-        buttonText={uploadType === 'main' ? 'Upload Main Photo' : 'Upload Hover Photo'}
       />
 
       <div className="flex flex-col items-center justify-center py-12 select-none overflow-hidden">
