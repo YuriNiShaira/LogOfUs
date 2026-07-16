@@ -26,7 +26,7 @@ const CatsBackground: React.FC = () => {
     {
       id: 'cat4',
       image: '/cat4.svg',
-      left: 70,
+      left: 69,
       top: 7.3,
       size: 95,
       opacity: 0.9,
@@ -55,12 +55,12 @@ const CatsBackground: React.FC = () => {
     {
       id: 'cat11',
       image: '/cat11.gif',
-      left: 26.6,
+      left: 12.3,
       top: 25,
       size: 85,
       rotation: 3,
       opacity: 0.85,
-      flip: false,
+      flip: true,
     },
     {
       id: 'cat12',
@@ -143,6 +143,70 @@ const CatsBackground: React.FC = () => {
     },
   ], []);
 
+  // TOP LAYER CATS - cats 20-25 (always on top, scrollable)
+  const topLayerCats = useMemo(() => [
+    {
+      id: 'cat20',
+      image: '/cat20.png',
+      left: 88.7,
+      top: -1,
+      size: 190,
+      rotation: 0,
+      opacity: 0.85,
+      flip: true,
+    },
+    {
+      id: 'cat21',
+      image: '/cat21.png',
+      left: 27.8,
+      top: 25.4,
+      size: 200,
+      rotation: -1,
+      opacity: 0.8,
+      flip: true,
+    },
+    {
+      id: 'cat22',
+      image: '/cat22.png',
+      left: 50,
+      top: 92.8,
+      size: 100,
+      rotation: -2,
+      opacity: 0.85,
+      flip: false,
+    },
+    {
+      id: 'cat23',
+      image: '/cat23.png',
+      left: -1,
+      top: -2,
+      size: 230,
+      rotation: 180,
+      opacity: 0.8,
+      flip: true,
+    },
+    {
+      id: 'cat24',
+      image: '/cat24.png',
+      left: 76,
+      top: 8.6,
+      size: 140,
+      rotation: -4,
+      opacity: 0.85,
+      flip: false,
+    },
+    {
+      id: 'cat25',
+      image: '/cat25.png',
+      left: 14,
+      top: 57.5,
+      size: 100,
+      rotation: 0,
+      opacity: 0.8,
+      flip: true,
+    },
+  ], []);
+
   // Walking cats with motion animation
   const walkingCats = useMemo(() => [
     {
@@ -178,101 +242,141 @@ const CatsBackground: React.FC = () => {
   ], []);
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-        zIndex: 10,
-      }}
-    >
-      {/* Cat stickers (static) */}
-      {catStickers.map((cat) => (
-        <div
-          key={cat.id}
-          style={{
-            position: 'absolute',
-            left: `${cat.left}%`,
-            top: `${cat.top}%`,
-            width: cat.size,
-            height: cat.size,
-            opacity: cat.opacity,
-            transform: `rotate(${cat.rotation}deg) scaleX(${cat.flip ? -1 : 1})`,
-            transformOrigin: 'center center',
-          }}
-        >
-          <img
-            src={cat.image}
-            alt="cat sticker"
-            style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none' }}
-            draggable={false}
-          />
-        </div>
-      ))}
-
-      {/* Walking cats - crossing paths with animation */}
-      {walkingCats.map((cat) => {
-        const isRightToLeft = cat.direction === 'right-to-left';
-        const startX = isRightToLeft ? 110 : -10;
-        const endX = isRightToLeft ? -10 : 110;
-        
-        return (
-          <motion.div
+    <>
+      {/* Main layer - cats 1-19 */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          zIndex: 10,
+        }}
+      >
+        {/* Cat stickers (static) */}
+        {catStickers.map((cat) => (
+          <div
             key={cat.id}
             style={{
               position: 'absolute',
-              top: `${cat.yPercent}%`,
+              left: `${cat.left}%`,
+              top: `${cat.top}%`,
               width: cat.size,
               height: cat.size,
-              transform: cat.flip ? 'scaleX(-1)' : 'scaleX(1)',
-            }}
-            initial={{ left: `${startX}%` }}
-            animate={{ left: `${endX}%` }}
-            transition={{
-              left: {
-                duration: cat.speed,
-                repeat: Infinity,
-                delay: cat.delay,
-                ease: 'linear',
-              },
+              opacity: cat.opacity,
+              transform: `rotate(${cat.rotation}deg) scaleX(${cat.flip ? -1 : 1})`,
+              transformOrigin: 'center center',
             }}
           >
             <img
               src={cat.image}
-              alt={`walking cat ${cat.id}`}
+              alt="cat sticker"
               style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none' }}
               draggable={false}
             />
-          </motion.div>
-        );
-      })}
+          </div>
+        ))}
 
-      {/* Paw prints (static) */}
-      {Array.from({ length: 8 }, (_, i) => (
-        <div
-          key={`paw-${i}`}
-          style={{
-            position: 'absolute',
-            left: `${8 + Math.random() * 84}%`,
-            top: `${10 + Math.random() * 75}%`,
-            opacity: 0.06,
-            width: 28,
-            height: 22,
-          }}
-        >
-          <svg viewBox="0 0 36 28" style={{ width: '100%', height: '100%' }}>
-            <ellipse cx="18" cy="22" rx="14" ry="6" fill="rgba(80,70,60,0.3)" />
-            <circle cx="9" cy="12" r="5" fill="rgba(80,70,60,0.3)" />
-            <circle cx="18" cy="10" r="5" fill="rgba(80,70,60,0.3)" />
-            <circle cx="27" cy="12" r="5" fill="rgba(80,70,60,0.3)" />
-          </svg>
-        </div>
-      ))}
-    </div>
+        {/* Walking cats - crossing paths with animation */}
+        {walkingCats.map((cat) => {
+          const isRightToLeft = cat.direction === 'right-to-left';
+          const startX = isRightToLeft ? 110 : -10;
+          const endX = isRightToLeft ? -10 : 110;
+          
+          return (
+            <motion.div
+              key={cat.id}
+              style={{
+                position: 'absolute',
+                top: `${cat.yPercent}%`,
+                width: cat.size,
+                height: cat.size,
+                transform: cat.flip ? 'scaleX(-1)' : 'scaleX(1)',
+              }}
+              initial={{ left: `${startX}%` }}
+              animate={{ left: `${endX}%` }}
+              transition={{
+                left: {
+                  duration: cat.speed,
+                  repeat: Infinity,
+                  delay: cat.delay,
+                  ease: 'linear',
+                },
+              }}
+            >
+              <img
+                src={cat.image}
+                alt={`walking cat ${cat.id}`}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none' }}
+                draggable={false}
+              />
+            </motion.div>
+          );
+        })}
+
+        {/* Paw prints (static) */}
+        {Array.from({ length: 8 }, (_, i) => (
+          <div
+            key={`paw-${i}`}
+            style={{
+              position: 'absolute',
+              left: `${8 + Math.random() * 84}%`,
+              top: `${10 + Math.random() * 75}%`,
+              opacity: 0.06,
+              width: 28,
+              height: 22,
+            }}
+          >
+            <svg viewBox="0 0 36 28" style={{ width: '100%', height: '100%' }}>
+              <ellipse cx="18" cy="22" rx="14" ry="6" fill="rgba(80,70,60,0.3)" />
+              <circle cx="9" cy="12" r="5" fill="rgba(80,70,60,0.3)" />
+              <circle cx="18" cy="10" r="5" fill="rgba(80,70,60,0.3)" />
+              <circle cx="27" cy="12" r="5" fill="rgba(80,70,60,0.3)" />
+            </svg>
+          </div>
+        ))}
+      </div>
+
+      {/* TOP LAYER - Cats 20-25 (always on top, scrollable) */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          zIndex: 9999,
+        }}
+      >
+        {topLayerCats.map((cat) => (
+          <div
+            key={cat.id}
+            style={{
+              position: 'absolute',
+              left: `${cat.left}%`,
+              top: `${cat.top}%`,
+              width: cat.size,
+              height: cat.size,
+              opacity: cat.opacity,
+              transform: `rotate(${cat.rotation}deg) scaleX(${cat.flip ? -1 : 1})`,
+              transformOrigin: 'center center',
+            }}
+          >
+            <img
+              src={cat.image}
+              alt="cat sticker"
+              style={{ width: '100%', height: '100%', objectFit: 'contain', userSelect: 'none' }}
+              draggable={false}
+            />
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
 
