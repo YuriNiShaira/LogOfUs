@@ -599,7 +599,6 @@ const Envelope: React.FC = () => {
         }
       `}</style>
 
-      {/* ✅ FIXED: Removed 'title', 'description', 'buttonText' props that don't exist */}
       <UploadPhotoModal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
