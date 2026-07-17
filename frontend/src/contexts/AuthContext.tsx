@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Heart } from 'lucide-react';
 
 interface UserData {
@@ -32,9 +33,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserData | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Check if token is valid and not expired
-  const isTokenValid = (token: string): boolean => {
+  const isTokenValid = useCallback((token: string): boolean => {
     if (!token) return false;
     try {
       const tokenPayload = JSON.parse(atob(token.split('.')[1]));
@@ -46,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error validating token:', error);
       return false;
     }
-  };
+  }, []);
 
   // Initialize auth from localStorage
   useEffect(() => {
@@ -62,16 +64,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           hasRefreshToken: !!refreshToken
         });
         
-        if (storedUser && accessToken && refreshToken) {
-          // Even if token is expired, we can still set the user
-          // The API interceptor will refresh the token automatically
+        if (storedUser && accessToken && refreshToken && isTokenValid(accessToken)) {
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
           setIsAuthenticated(true);
           console.log('Auth restored for user:', parsedUser.display_name);
-          
-          if (!isTokenValid(accessToken)) {
-            console.log('Token expired, but will refresh automatically');
+        } else if (storedUser && accessToken && refreshToken) {
+          // Token expired but we have refresh token - try to restore user
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            setIsAuthenticated(true);
+            console.log('Auth restored for user (token may be expired):', parsedUser.display_name);
+          } catch (error) {
+            console.error('Error parsing user data:', error);
+            localStorage.removeItem('coupleUser');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            setIsAuthenticated(false);
+            setUser(null);
           }
         } else {
           console.log('No auth data found');
@@ -80,7 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        // Clear corrupted data
         localStorage.removeItem('coupleUser');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
@@ -92,9 +102,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     initializeAuth();
-  }, []);
+  }, [isTokenValid]);
 
-  const login = (userData: UserData, accessToken: string, refreshToken: string) => {
+  const login = useCallback((userData: UserData, accessToken: string, refreshToken: string) => {
     try {
       const hasPartner = userData.partner_name !== 'Waiting for partner to join...' && 
                         userData.partner_name !== 'Waiting for partner...';
@@ -112,20 +122,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       
+      //Clear React Query cache on login to prevent showing old user data
+      queryClient.clear();
+      
       console.log('Login successful, data stored for:', fullUserData.display_name);
     } catch (error) {
       console.error('Error during login:', error);
     }
-  };
+  }, [queryClient]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('coupleUser');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    console.log('Logout successful');
-  };
+    
+    //Clear React Query cache on logout to prevent data leakage
+    queryClient.clear();
+    
+
+    console.log('Logout successful, cache cleared');
+  }, [queryClient]);
 
   // Show loading spinner while checking auth
   if (isLoading) {

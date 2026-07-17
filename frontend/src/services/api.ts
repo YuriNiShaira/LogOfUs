@@ -12,6 +12,12 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 // Track ongoing requests to prevent duplicates
 const pendingRequests = new Map<string, Promise<any>>();
 
+const clearAllCache = (): void => {
+  cache.clear();
+  pendingRequests.clear();
+  console.log('All API cache cleared');
+};
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   headers: {
@@ -166,5 +172,6 @@ export {
   batchGet,
   clearCache,
   clearCacheFor,
+  clearAllCache, 
   prefetch,
 };

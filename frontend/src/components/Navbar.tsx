@@ -22,7 +22,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
-import { api } from '../services/api';
+import { api, clearAllCache } from '../services/api';
 import SettingsDropdown from './SettingsDropdown';
 import type { BackgroundTheme } from './backgrounds/types';
 
@@ -63,8 +63,14 @@ const Navbar: React.FC = () => {
     } catch (error) {
       // Silent fail
     }
+    
+    // ✅ Clear all API cache before logout
+    clearAllCache();
+    
+    // ✅ Clear React Query cache (handled in logout)
     logout();
-    toast.success('See you soon!');
+    
+    toast.success('See you soon! 💕');
     navigate('/login');
   };
 
@@ -87,13 +93,11 @@ const Navbar: React.FC = () => {
     setCurrentBackground(bgTheme);
     localStorage.setItem('backgroundTheme', bgTheme);
     
-    // Dispatch storage event for same window (some browsers don't trigger storage on same window)
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'backgroundTheme',
       newValue: bgTheme
     }));
     
-    // Dispatch custom event for more reliable same-window updates
     window.dispatchEvent(new CustomEvent('backgroundThemeChange', {
       detail: { theme: bgTheme }
     }));
@@ -303,7 +307,7 @@ const Navbar: React.FC = () => {
               <p className={`text-xs leading-none font-serif italic font-medium transition-colors duration-300 ${
                 isDark ? 'text-amber-300/75' : 'text-amber-700/65'
               }`}>
-                {user?.couple_name || 'Loading...'}
+                {user?.couple_name || 'Loading...'} 💕
               </p>
             </div>
           </motion.div>
@@ -363,7 +367,7 @@ const Navbar: React.FC = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className={`absolute right-0 mt-2 p-2 rounded-lg shadow-xl min-w-[200px] z-50 ${
+                    className={`absolute right-0 mt-2 p-2 rounded-lg shadow-xl min-w-50 z-50 ${
                       isDark ? 'bg-stone-800 border border-stone-700' : 'bg-white border border-stone-200'
                     }`}
                   >
@@ -427,7 +431,7 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation Menu - Updated with optimizations */}
+        {/* Mobile Navigation Menu */}
         <AnimatePresence>
           {isNavOpen && (
             <motion.div
@@ -442,9 +446,7 @@ const Navbar: React.FC = () => {
               } backdrop-blur-xl`}
             >
               <div className="mobile-nav-ribbon" />
-              
-              {/* Reduced padding on mobile */}
-              <div className="px-4 sm:px-6 py-4 space-y-1">
+              <div className="px-6 py-4 space-y-1">
                 {navItems.map((item, idx) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
@@ -460,7 +462,7 @@ const Navbar: React.FC = () => {
                         navigate(item.path);
                         setIsNavOpen(false);
                       }}
-                      className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg transition-all relative group font-semibold tracking-wide text-sm ${
+                      className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-lg transition-all relative group font-semibold tracking-wide ${
                         active
                           ? `${isDark 
                               ? 'bg-red-950/50 text-red-400 shadow-md shadow-red-900/20' 
@@ -483,11 +485,11 @@ const Navbar: React.FC = () => {
                   );
                 })}
 
-                {/* Mobile Background Theme Selector - Compact grid on mobile */}
+                {/* Mobile Background Theme Selector */}
                 <div className={`my-2 page-divider ${isDark ? 'text-amber-700' : 'text-amber-300'}`} />
                 
-                <div className="px-1 py-1">
-                  <p className={`text-[10px] font-serif uppercase tracking-wider mb-1.5 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                <div className="px-2 py-1">
+                  <p className={`text-xs font-serif uppercase tracking-wider mb-2 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                     Background Theme
                   </p>
                   <div className="grid grid-cols-2 gap-1">
@@ -501,15 +503,15 @@ const Navbar: React.FC = () => {
                             handleBackgroundChange(bgTheme.id);
                             setIsNavOpen(false);
                           }}
-                          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all text-xs ${
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
                             isActive
                               ? isDark ? 'bg-rose-900/50 text-rose-300' : 'bg-rose-100 text-rose-700'
                               : isDark ? 'hover:bg-stone-700 text-stone-300' : 'hover:bg-stone-100 text-stone-700'
                           }`}
                         >
                           <Icon className="w-3 h-3" />
-                          <span className="flex-1 text-left text-[10px] truncate">{bgTheme.label}</span>
-                          {isActive && <Check size={10} className="text-rose-500 flex-shrink-0" />}
+                          <span className="flex-1 text-left text-xs truncate">{bgTheme.label}</span>
+                          {isActive && <Check size={12} className="text-rose-500 shrink-0" />}
                         </button>
                       );
                     })}
@@ -528,7 +530,7 @@ const Navbar: React.FC = () => {
                     handleLogout();
                     setIsNavOpen(false);
                   }}
-                  className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg transition-all font-semibold tracking-wide text-sm ${
+                  className={`flex items-center gap-3 w-full px-4 py-3.5 rounded-lg transition-all font-semibold tracking-wide ${
                     isDark
                       ? 'text-amber-200/75 hover:bg-amber-900/50'
                       : 'text-amber-800/75 hover:bg-amber-100/60'
