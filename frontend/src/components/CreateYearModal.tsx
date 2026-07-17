@@ -123,6 +123,9 @@ const CreateYearModal: React.FC<CreateYearModalProps> = ({ isOpen, onClose }) =>
     if (coverImage) {
       formData.append('cover_image', coverImage);
     }
+    if (user?.id) {
+      formData.append('user_id', user.id.toString());
+    }
     createYearMutation.mutate(formData);
   };
 
@@ -136,7 +139,7 @@ const CreateYearModal: React.FC<CreateYearModalProps> = ({ isOpen, onClose }) =>
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -150,7 +153,7 @@ const CreateYearModal: React.FC<CreateYearModalProps> = ({ isOpen, onClose }) =>
             initial={{ scale: 0.95, y: 20, rotate: 1 }}
             animate={{ scale: 1, y: 0, rotate: 0 }}
             exit={{ scale: 0.95, y: 20, rotate: -1 }}
-            className="relative w-full max-w-lg bg-[#faf8f5] shadow-2xl rounded-sm border border-gray-200 my-auto z-10 max-h-[90vh] overflow-y-auto custom-scrollbar"
+            className="relative w-full max-w-lg bg-[#faf8f5] shadow-2xl rounded-sm border border-gray-200 my-auto z-[100000] max-h-[90vh] overflow-y-auto custom-scrollbar"
             style={{
               backgroundImage: 'radial-gradient(rgba(156, 163, 175, 0.3) 1px, transparent 1px)',
               backgroundSize: '20px 20px'

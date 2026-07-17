@@ -3,14 +3,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Heart } from 'lucide-react';
 
 interface UserData {
+  id: number;
   username: string;
   display_name: string;
   couple_name: string;
   couple_id: number;
   anniversary_date: string;
   partner_name: string;
-  invite_code?: string; 
-  has_partner?: boolean;  
+  invite_code?: string;
+  has_partner?: boolean;
 }
 
 interface AuthContextType {

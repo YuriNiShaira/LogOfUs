@@ -372,8 +372,9 @@ const Envelope: React.FC = () => {
     if (!loveLetters || loveLetters.length === 0) return null;
     return loveLetters[0];
   }, [loveLetters]);
-
+  
   const isDark = theme === 'dark';
+  const currentUserId = user?.id;
   
   // ✅ FIX: More reliable isPartner1 detection
   const isPartner1 = useMemo(() => {
@@ -422,6 +423,9 @@ const Envelope: React.FC = () => {
       const fieldName = isMain ? 'profile_picture' : 'hover_profile_picture';
       formData.append(fieldName, file);
       
+      if (currentUserId) {
+        formData.append('user_id', String(currentUserId));
+      }
       // ✅ Add target to form data - this tells the backend who to update
       formData.append('target', target === 'partner2' ? 'partner' : 'self');
 
@@ -432,6 +436,7 @@ const Envelope: React.FC = () => {
 
       console.log('📡 Uploading to:', endpoint);
       console.log('📎 Target:', target);
+      console.log('👤 Current user ID:', currentUserId);
 
       const response = await api.patch(endpoint, formData, {
         headers: { 

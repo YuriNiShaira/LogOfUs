@@ -4,6 +4,7 @@ import { X, Calendar, MapPin, Heart, Quote, Trash2, Save, Image as ImageIcon } f
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import type { Memory } from './year-detail';
 
@@ -43,6 +44,7 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Inject styles to force light mode
   useEffect(() => {
@@ -176,6 +178,9 @@ const EditMemoryModal: React.FC<EditMemoryModalProps> = ({ isOpen, onClose, memo
     } else if (image) {
       // User uploaded a new image
       formData.append('image', image);
+    }
+    if (user?.id) {
+      formData.append('user_id', user.id.toString());
     }
     // If neither, keep existing image (don't send anything)
 

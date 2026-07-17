@@ -44,6 +44,7 @@ def register(request):
     tokens = get_tokens_for_user(user)
     
     return Response({
+        'id': user.id,
         'message': f'Welcome, {user.profile.display_name}!',
         'username': user.username,
         'display_name': user.profile.display_name,
@@ -82,6 +83,7 @@ def login_view(request):
     invite_code = couple.invite_code if not has_partner else None
     
     return Response({
+        'id': user.id,
         'message': f'Welcome back, {user.profile.display_name}!',
         'username': user.username,
         'display_name': user.profile.display_name,
@@ -116,6 +118,7 @@ def join_couple(request):
     partner_name = other_member.display_name if other_member else 'Your Partner'
     
     return Response({
+        'id': user.id,
         'message': f'Successfully joined {couple.name}!',
         'username': user.username,
         'display_name': user.profile.display_name,
@@ -347,7 +350,7 @@ def upload_profile_picture(request):
         
         profile = partner 
     
-    image_url = upload_to_supabase(image_file, folder='profile_pictures')
+    image_url = upload_to_supabase(image_file, folder='profile_pictures', user_id=request.user.id)
     
     if image_url:
         profile.profile_picture = image_url
@@ -392,7 +395,7 @@ def upload_hover_profile_picture(request):
         
         profile = partner  
     
-    image_url = upload_to_supabase(image_file, folder='profile_pictures/hover')
+    image_url = upload_to_supabase(image_file, folder='profile_pictures', user_id=request.user.id)
     
     if image_url:
         profile.hover_profile_picture = image_url

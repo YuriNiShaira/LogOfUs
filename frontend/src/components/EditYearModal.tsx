@@ -4,6 +4,7 @@ import { X, Upload, Sparkles, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../contexts/AuthContext';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface EditYearModalProps {
@@ -39,6 +40,7 @@ const EditYearModal: React.FC<EditYearModalProps> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Inject styles directly into the head to enforce light mode rules for inputs in dark mode
   useEffect(() => {
@@ -109,6 +111,9 @@ const EditYearModal: React.FC<EditYearModalProps> = ({
         formData.append('cover_image', coverImage);
       } else if (previewUrl === null && currentCoverImage) {
         formData.append('cover_image', '');
+      }
+      if (user?.id) {
+        formData.append('user_id', user.id.toString());
       }
 
       await api.patch(`/years/${yearId}/`, formData, {

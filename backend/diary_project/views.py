@@ -16,42 +16,9 @@ from .serializers import (
 )
 from .permissions import IsCoupleMember
 from django.db.models import Avg
-import os
-import uuid
-import requests
 from rest_framework import serializers as drf_serializers
+from utils.upload import upload_to_supabase
 
-def upload_to_supabase(file, folder="memories"):
-    """Upload file to Supabase Storage and return public URL"""
-    supabase_url = os.getenv('SUPABASE_URL')
-    supabase_key = os.getenv('SUPABASE_ANON_KEY')
-    bucket = "memories"  
-    
-    if not supabase_url or not supabase_key or not file:
-        return None
-    
-    file_ext = file.name.split('.')[-1] if '.' in file.name else 'jpg'
-    file_name = f"{folder}/{uuid.uuid4()}.{file_ext}"
-    
-    try:
-        response = requests.post(
-            f"{supabase_url}/storage/v1/object/{bucket}/{file_name}",  
-            headers={
-                "Authorization": f"Bearer {supabase_key}",
-                "Content-Type": file.content_type or "image/jpeg",
-            },
-            data=file.read(),
-        )
-        
-        if response.status_code == 200:
-            return f"{supabase_url}/storage/v1/object/public/{bucket}/{file_name}"  
-        else:
-            print(f"Upload failed: {response.status_code} - {response.text}")
-            return None
-    except Exception as e:
-        print(f"Upload error: {e}")
-        return None
-    
 # ============================================
 # HELPER
 # ============================================
@@ -105,7 +72,9 @@ class YearViewSet(CoupleFilteredViewSet):
         image_file = self.request.FILES.get('cover_image')
         image_url = None
         if image_file:
-            image_url = upload_to_supabase(image_file, folder='year_covers')
+            image_url = upload_to_supabase(image_file, folder='year_covers', user_id=self.request.user.id)
+            if not image_url:
+                raise drf_serializers.ValidationError({'cover_image': 'Failed to upload cover image. Please try again.'})
 
         year = serializer.save(couple=couple)
         if image_url:
@@ -134,7 +103,9 @@ class YearViewSet(CoupleFilteredViewSet):
         
         image_file = request.FILES.get('cover_image')
         if image_file:
-            image_url = upload_to_supabase(image_file, folder='year_covers')
+            image_url = upload_to_supabase(image_file, folder='year_covers', user_id=request.user.id)
+            if not image_url:
+                raise drf_serializers.ValidationError({'cover_image': 'Failed to upload cover image. Please try again.'})
             request.data._mutable = True
             request.data['cover_image'] = image_url
             request.data._mutable = False
@@ -185,7 +156,9 @@ class MemoryViewSet(CoupleFilteredViewSet):
 
         image_url = None
         if image_file:
-            image_url = upload_to_supabase(image_file)
+            image_url = upload_to_supabase(image_file, folder='memories', user_id=self.request.user.id)
+            if not image_url:
+                raise drf_serializers.ValidationError({'image': 'Failed to upload memory image. Please try again.'})
 
         validated = serializer.validated_data.copy()
         validated.pop('image', None)
@@ -205,10 +178,11 @@ class MemoryViewSet(CoupleFilteredViewSet):
             memory.image = None
             memory.save(update_fields=['image'])
         elif image_file:
-            image_url = upload_to_supabase(image_file)
-            if image_url:
-                memory.image = image_url
-                memory.save(update_fields=['image'])
+            image_url = upload_to_supabase(image_file, folder='memories', user_id=request.user.id)
+            if not image_url:
+                raise drf_serializers.ValidationError({'image': 'Failed to upload memory image. Please try again.'})
+            memory.image = image_url
+            memory.save(update_fields=['image'])
         
         serializer = self.get_serializer(memory, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -735,7 +709,7 @@ class PetPhotoViewSet(CoupleFilteredViewSet):
         if not image_file:
             raise drf_serializers.ValidationError({'image': 'Image file is required.'})
         
-        image_url = upload_to_supabase(image_file, folder='pet_photos')
+        image_url = upload_to_supabase(image_file, folder='pet_photos', user_id=self.request.user.id)
         
         date_taken = self.request.data.get('date_taken')
         if date_taken:

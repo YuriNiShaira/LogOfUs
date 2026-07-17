@@ -165,6 +165,9 @@ const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({ isOpen, onClose, 
     if (image) {
       formData.append('image', image);
     }
+    if (user?.id) {
+      formData.append('user_id', user.id.toString());
+    }
 
     createMemoryMutation.mutate(formData);
   };
