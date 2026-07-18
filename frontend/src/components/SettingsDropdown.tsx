@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import {
   User,
   Heart,
@@ -53,6 +53,8 @@ const SettingsDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'couple' | 'security' | 'preferences'>('profile');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   
   const { user, logout } = useAuth();
   const { theme } = useTheme();
@@ -92,16 +94,55 @@ const SettingsDropdown: React.FC = () => {
   // Check if on mobile
   const [isMobile, setIsMobile] = useState(false);
 
+  // Update dropdown position when opened
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update position on scroll/resize
+  useEffect(() => {
+    const updatePosition = () => {
+      if (isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 8,
+          right: window.innerWidth - rect.right,
+        });
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('scroll', updatePosition, { passive: true });
+      window.addEventListener('resize', updatePosition, { passive: true });
+    }
+    
+    return () => {
+      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [isOpen]);
 
   // Check mobile
   useEffect(() => {
@@ -321,11 +362,503 @@ const SettingsDropdown: React.FC = () => {
     { id: 'snowy', label: 'Snowy', icon: <Snowflake size={18} /> },
   ];
 
+  // Dropdown content component - NO Framer Motion!
+  const DropdownContent = () => (
+    <div
+      className={`fixed w-[520px] max-h-[85vh] overflow-hidden rounded-xl shadow-2xl border transition-all duration-200 ease-out
+        ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}
+        ${isDark
+          ? 'bg-[#242121] border-[#3a3535] shadow-black/60'
+          : 'bg-[#faf8f5] border-[#e8e4dc] shadow-stone-300/60'
+        }`}
+      style={{
+        top: dropdownPosition.top || 'auto',
+        right: dropdownPosition.right || 'auto',
+        zIndex: 999999,
+        transformOrigin: 'top right',
+      }}
+      ref={dropdownRef}
+    >
+      <div className="flex h-[520px]">
+        
+        {/* Sidebar Tabs */}
+        <div className={`w-40 shrink-0 py-6 px-3 flex flex-col gap-1 border-r relative z-10 ${
+          isDark ? 'border-[#3a3535] bg-[#1c1a1a]/50' : 'border-[#e8e4dc] bg-[#f2efe9]/50'
+        }`}>
+          <div className={`absolute right-0 top-0 bottom-0 w-[1px] shadow-[-2px_0_4px_rgba(0,0,0,0.05)] ${isDark ? 'bg-black/20' : 'bg-black/5'}`} />
+
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-l-xl text-sm font-serif transition-all relative ${
+                  isActive
+                    ? isDark
+                      ? 'bg-[#242121] text-rose-300 shadow-[-4px_0_10px_rgba(0,0,0,0.1)] translate-x-1'
+                      : 'bg-[#faf8f5] text-rose-600 shadow-[-4px_0_10px_rgba(0,0,0,0.03)] translate-x-1'
+                    : isDark
+                      ? 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
+                      : 'text-stone-500 hover:text-stone-800 hover:bg-black/5'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse duration-1000' : ''}`} />
+                <span className="tracking-wide">{tab.label}</span>
+                {isActive && (
+                  <div className={`absolute -right-3 top-0 bottom-0 w-3 ${isDark ? 'bg-[#242121]' : 'bg-[#faf8f5]'}`} />
+                )}
+              </button>
+            );
+          })}
+          
+          <div className="mt-auto pt-4 border-t border-stone-300/30 dark:border-stone-700/50">
+            <button
+              onClick={() => {
+                const refreshToken = localStorage.getItem('refreshToken');
+                if (refreshToken) {
+                  api.post('/auth/logout/', { refresh: refreshToken }).catch(() => {});
+                }
+                logout();
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-serif text-rose-500/80 hover:text-rose-600 hover:bg-rose-500/10 transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="tracking-wide">Close Diary</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-8 relative">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="w-6 h-6 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full text-center opacity-80">
+              <BookHeart className="w-12 h-12 text-rose-400/50 mb-4" />
+              <h3 className={`font-serif text-xl mb-2 ${isDark ? 'text-amber-100' : 'text-amber-900'}`}>
+                Pages Still Blank
+              </h3>
+              <p className={`text-sm font-serif italic mb-6 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                We're still binding these pages. Check back soon.
+              </p>
+              <button
+                onClick={() => setError(null)}
+                className="px-6 py-2 rounded-full font-serif text-sm border border-rose-300/50 hover:bg-rose-300/10 transition-all text-rose-500"
+              >
+                Turn back
+              </button>
+            </div>
+          ) : (
+            <div
+              key={activeTab}
+              className="animate-in fade-in slide-in-from-right-2 duration-200"
+            >
+              {/* Profile Tab */}
+              {activeTab === 'profile' && (
+                <form onSubmit={handleProfileUpdate} className="space-y-6">
+                  <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
+                    <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
+                      My Identity
+                    </h3>
+                    <p className={`text-xs font-serif italic mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                      How you appear in the pages of this journal.
+                    </p>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div>
+                      <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                        Author Handle
+                      </label>
+                      <div className={`px-4 py-3 rounded-lg font-mono text-sm ${isDark ? 'bg-black/20 text-stone-400' : 'bg-stone-100/50 text-stone-500'}`}>
+                        @{profile?.username || user?.username || 'guest_writer'}
+                      </div>
+                    </div>
+                    <div>
+                      <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                        Pen Name (Display)
+                      </label>
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 ${
+                          isDark 
+                            ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' 
+                            : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
+                        }`}
+                        placeholder="How should we call you?"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className={`mt-8 w-full flex items-center justify-center gap-2 py-3 rounded-lg font-serif tracking-wide transition-all ${
+                      isDark
+                        ? 'bg-rose-900/50 text-rose-200 hover:bg-rose-800/60 border border-rose-800/50'
+                        : 'bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-200'
+                    } disabled:opacity-50`}
+                  >
+                    {saving ? (
+                      <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" /> Ink these changes
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* Couple Tab */}
+              {activeTab === 'couple' && (
+                <div className="space-y-6">
+                  <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
+                    <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
+                      Our Story
+                    </h3>
+                    <p className={`text-xs font-serif italic mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                      The details of your shared journey.
+                    </p>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className={`p-4 rounded-xl border ${isDark ? 'border-rose-900/30 bg-rose-950/20' : 'border-rose-200/50 bg-rose-50/50'}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full ${isDark ? 'bg-rose-900/40' : 'bg-rose-200/50'}`}>
+                          <Heart className={`w-5 h-5 ${isDark ? 'text-rose-300' : 'text-rose-600'} ${hasPartner ? 'fill-current' : ''}`} />
+                        </div>
+                        <div>
+                          <p className={`text-xs font-serif uppercase tracking-widest ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                            Co-Author
+                          </p>
+                          <p className={`text-lg font-serif ${isDark ? 'text-rose-100' : 'text-rose-900'}`}>
+                            {hasPartner ? partnerName : 'Pages awaiting a partner...'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {!hasPartner && inviteCode && (
+                      <div className="pt-2">
+                        <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                          Invitation Letter Code
+                        </label>
+                        <div className="flex gap-2">
+                          <div className={`flex-1 px-4 py-3 rounded-lg font-mono text-center text-lg tracking-[0.25em] ${
+                            isDark ? 'bg-black/20 text-rose-300' : 'bg-rose-50/50 text-rose-700 border border-rose-100'
+                          }`}>
+                            {inviteCode}
+                          </div>
+                          <button
+                            onClick={copyInviteCode}
+                            className={`px-6 py-3 rounded-lg font-serif transition-all ${
+                              isDark ? 'bg-rose-900/50 text-rose-200 hover:bg-rose-800/60' : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                            }`}
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                        Chapter Title (Couple Name)
+                      </label>
+                      <input
+                        type="text"
+                        value={coupleName}
+                        onChange={(e) => setCoupleName(e.target.value)}
+                        className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 ${
+                          isDark 
+                            ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' 
+                            : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
+                        }`}
+                        placeholder="e.g. Jack & Rose"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                        The Day It Began
+                      </label>
+                      <input
+                        type="date"
+                        value={anniversaryDate}
+                        onChange={(e) => setAnniversaryDate(e.target.value)}
+                        className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 ${
+                          isDark 
+                            ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' 
+                            : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleCoupleUpdate}
+                    disabled={saving}
+                    className={`mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-lg font-serif tracking-wide transition-all ${
+                      isDark
+                        ? 'bg-rose-900/50 text-rose-200 hover:bg-rose-800/60 border border-rose-800/50'
+                        : 'bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-200'
+                    } disabled:opacity-50`}
+                  >
+                    <Save className="w-4 h-4" /> Update Our Story
+                  </button>
+                </div>
+              )}
+
+              {/* Security Tab */}
+              {activeTab === 'security' && (
+                <form onSubmit={handlePasswordChange} className="space-y-6">
+                  <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
+                    <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
+                      Privacy Lock
+                    </h3>
+                    <p className={`text-xs font-serif italic mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                      Keep your journal entries safe from prying eyes.
+                    </p>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div>
+                      <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                        Current Lock Key
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          value={passwordData.current_password}
+                          onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                          className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
+                            isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
+                          }`}
+                          placeholder="Enter current password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                        >
+                          {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                        New Lock Key
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          value={passwordData.new_password}
+                          onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                          className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
+                            isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
+                          }`}
+                          placeholder="Min. 8 characters"
+                          required
+                          minLength={8}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                        >
+                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
+                        Confirm New Lock Key
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={passwordData.confirm_password}
+                          onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                          className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
+                            isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
+                          }`}
+                          placeholder="Type it once more"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className={`mt-8 w-full flex items-center justify-center gap-2 py-3 rounded-lg font-serif tracking-wide transition-all ${
+                      isDark
+                        ? 'bg-stone-700/50 text-stone-200 hover:bg-stone-600/60'
+                        : 'bg-stone-800 text-stone-100 hover:bg-stone-700'
+                    } disabled:opacity-50`}
+                  >
+                    {saving ? (
+                      <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" /> Change Lock
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* Preferences Tab */}
+              {activeTab === 'preferences' && (
+                <div className="space-y-6">
+                  <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
+                    <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
+                      Aesthetics
+                    </h3>
+                    <p className={`text-xs font-serif italic mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                      Customize the feeling of your space.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {/* Background Theme Selector */}
+                    <div className="space-y-3">
+                      <label className={`block text-xs font-serif tracking-widest uppercase ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          Background Theme
+                        </div>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {backgroundThemes.map((bgTheme) => {
+                          const isActive = currentBackground === bgTheme.id;
+                          return (
+                            <button
+                              key={bgTheme.id}
+                              onClick={() => handleBackgroundChange(bgTheme.id)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-serif ${
+                                isActive
+                                  ? isDark 
+                                    ? 'bg-rose-900/50 text-rose-300 border border-rose-700/50' 
+                                    : 'bg-rose-100 text-rose-700 border border-rose-300'
+                                  : isDark 
+                                    ? 'bg-stone-800/50 text-stone-300 hover:bg-stone-700/50 border border-stone-700/30'
+                                    : 'bg-stone-50/50 text-stone-600 hover:bg-stone-100 border border-stone-200/30'
+                              }`}
+                            >
+                              <span className="flex-shrink-0">{bgTheme.icon}</span>
+                              <span className="flex-1 text-left truncate">{bgTheme.label}</span>
+                              {isActive && <Check className="w-3 h-3 text-rose-500 flex-shrink-0" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-gradient-to-r from-transparent via-stone-300/30 to-transparent my-4" />
+
+                    {/* Falling Petals */}
+                    <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
+                      <div>
+                        <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                          <Flower2 className="inline w-4 h-4 mr-2 text-rose-400" />
+                          Falling Petals
+                        </p>
+                        <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                          Drifting romantic memories
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleSettingToggle('enablePetals')}
+                        className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enablePetals ? 'bg-rose-500/80' : 'bg-stone-300'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enablePetals ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+
+                    {/* Show Cats - with mobile notice */}
+                    <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Cat className="inline w-4 h-4 text-amber-400" />
+                          <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                            Show Cats
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                            Cute cat stickers roaming around
+                          </p>
+                          {isMobile && (
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                              isDark ? 'bg-amber-900/30 text-amber-400 border border-amber-700/30' : 'bg-amber-100 text-amber-700 border border-amber-200'
+                            }`}>
+                              <Smartphone className="w-2.5 h-2.5" />
+                              Desktop only
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleSettingToggle('enableCats')}
+                        className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enableCats !== false ? 'bg-rose-500/80' : 'bg-stone-300'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enableCats !== false ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+
+                    {/* Smooth Turning */}
+                    <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
+                      <div>
+                        <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
+                          <Sparkles className="inline w-4 h-4 mr-2 text-amber-400" />
+                          Smooth Turning
+                        </p>
+                        <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
+                          Page flip animations
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleSettingToggle('enableAnimations')}
+                        className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enableAnimations ? 'bg-rose-500/80' : 'bg-stone-300'}`}
+                      >
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enableAnimations ? 'right-1' : 'left-1'}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="relative z-50" ref={dropdownRef}>
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+    <>
+      <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-2 p-2.5 rounded-full transition-all duration-300 shadow-sm ${
           isDark
@@ -334,500 +867,13 @@ const SettingsDropdown: React.FC = () => {
         } ${isOpen ? 'ring-2 ring-rose-400/50' : ''}`}
       >
         <Settings className="w-5 h-5" />
-      </motion.button>
+      </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -15, rotateX: -10, transformPerspective: 1000 }}
-            animate={{ opacity: 1, y: 0, rotateX: 0 }}
-            exit={{ opacity: 0, y: -10, rotateX: -10, transition: { duration: 0.15 } }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className={`absolute right-0 top-14 w-[520px] max-h-[85vh] overflow-hidden rounded-xl shadow-2xl border ${
-              isDark
-                ? 'bg-[#242121] border-[#3a3535] shadow-black/60'
-                : 'bg-[#faf8f5] border-[#e8e4dc] shadow-stone-300/60'
-            }`}
-          >
-            <div className="flex h-[520px]">
-              
-              {/* Sidebar Tabs */}
-              <div className={`w-40 shrink-0 py-6 px-3 flex flex-col gap-1 border-r relative z-10 ${
-                isDark ? 'border-[#3a3535] bg-[#1c1a1a]/50' : 'border-[#e8e4dc] bg-[#f2efe9]/50'
-              }`}>
-                <div className={`absolute right-0 top-0 bottom-0 w-[1px] shadow-[-2px_0_4px_rgba(0,0,0,0.05)] ${isDark ? 'bg-black/20' : 'bg-black/5'}`} />
-
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-l-xl text-sm font-serif transition-all relative ${
-                        isActive
-                          ? isDark
-                            ? 'bg-[#242121] text-rose-300 shadow-[-4px_0_10px_rgba(0,0,0,0.1)] translate-x-1'
-                            : 'bg-[#faf8f5] text-rose-600 shadow-[-4px_0_10px_rgba(0,0,0,0.03)] translate-x-1'
-                          : isDark
-                            ? 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
-                            : 'text-stone-500 hover:text-stone-800 hover:bg-black/5'
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse duration-1000' : ''}`} />
-                      <span className="tracking-wide">{tab.label}</span>
-                      {isActive && (
-                        <div className={`absolute -right-3 top-0 bottom-0 w-3 ${isDark ? 'bg-[#242121]' : 'bg-[#faf8f5]'}`} />
-                      )}
-                    </button>
-                  );
-                })}
-                
-                <div className="mt-auto pt-4 border-t border-stone-300/30 dark:border-stone-700/50">
-                  <button
-                    onClick={() => {
-                      const refreshToken = localStorage.getItem('refreshToken');
-                      if (refreshToken) {
-                        api.post('/auth/logout/', { refresh: refreshToken }).catch(() => {});
-                      }
-                      logout();
-                      setIsOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-serif text-rose-500/80 hover:text-rose-600 hover:bg-rose-500/10 transition-all"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span className="tracking-wide">Close Diary</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Content Area */}
-              <div className="flex-1 overflow-y-auto p-8 relative">
-                {loading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="w-6 h-6 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : error ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center opacity-80">
-                    <BookHeart className="w-12 h-12 text-rose-400/50 mb-4" />
-                    <h3 className={`font-serif text-xl mb-2 ${isDark ? 'text-amber-100' : 'text-amber-900'}`}>
-                      Pages Still Blank
-                    </h3>
-                    <p className={`text-sm font-serif italic mb-6 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                      We're still binding these pages. Check back soon.
-                    </p>
-                    <button
-                      onClick={() => setError(null)}
-                      className="px-6 py-2 rounded-full font-serif text-sm border border-rose-300/50 hover:bg-rose-300/10 transition-all text-rose-500"
-                    >
-                      Turn back
-                    </button>
-                  </div>
-                ) : (
-                  <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {/* Profile Tab */}
-                    {activeTab === 'profile' && (
-                      <form onSubmit={handleProfileUpdate} className="space-y-6">
-                        <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
-                          <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
-                            My Identity
-                          </h3>
-                          <p className={`text-xs font-serif italic mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                            How you appear in the pages of this journal.
-                          </p>
-                        </div>
-
-                        <div className="space-y-5">
-                          <div>
-                            <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                              Author Handle
-                            </label>
-                            <div className={`px-4 py-3 rounded-lg font-mono text-sm ${isDark ? 'bg-black/20 text-stone-400' : 'bg-stone-100/50 text-stone-500'}`}>
-                              @{profile?.username || user?.username || 'guest_writer'}
-                            </div>
-                          </div>
-                          <div>
-                            <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                              Pen Name (Display)
-                            </label>
-                            <input
-                              type="text"
-                              value={displayName}
-                              onChange={(e) => setDisplayName(e.target.value)}
-                              className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 ${
-                                isDark 
-                                  ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' 
-                                  : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
-                              }`}
-                              placeholder="How should we call you?"
-                              required
-                            />
-                          </div>
-                        </div>
-
-                        <button
-                          type="submit"
-                          disabled={saving}
-                          className={`mt-8 w-full flex items-center justify-center gap-2 py-3 rounded-lg font-serif tracking-wide transition-all ${
-                            isDark
-                              ? 'bg-rose-900/50 text-rose-200 hover:bg-rose-800/60 border border-rose-800/50'
-                              : 'bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-200'
-                          } disabled:opacity-50`}
-                        >
-                          {saving ? (
-                            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <>
-                              <Save className="w-4 h-4" /> Ink these changes
-                            </>
-                          )}
-                        </button>
-                      </form>
-                    )}
-
-                    {/* Couple Tab */}
-                    {activeTab === 'couple' && (
-                      <div className="space-y-6">
-                        <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
-                          <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
-                            Our Story
-                          </h3>
-                          <p className={`text-xs font-serif italic mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                            The details of your shared journey.
-                          </p>
-                        </div>
-
-                        <div className="space-y-5">
-                          <div className={`p-4 rounded-xl border ${isDark ? 'border-rose-900/30 bg-rose-950/20' : 'border-rose-200/50 bg-rose-50/50'}`}>
-                            <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-full ${isDark ? 'bg-rose-900/40' : 'bg-rose-200/50'}`}>
-                                <Heart className={`w-5 h-5 ${isDark ? 'text-rose-300' : 'text-rose-600'} ${hasPartner ? 'fill-current' : ''}`} />
-                              </div>
-                              <div>
-                                <p className={`text-xs font-serif uppercase tracking-widest ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                                  Co-Author
-                                </p>
-                                <p className={`text-lg font-serif ${isDark ? 'text-rose-100' : 'text-rose-900'}`}>
-                                  {hasPartner ? partnerName : 'Pages awaiting a partner...'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {!hasPartner && inviteCode && (
-                            <div className="pt-2">
-                              <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                                Invitation Letter Code
-                              </label>
-                              <div className="flex gap-2">
-                                <div className={`flex-1 px-4 py-3 rounded-lg font-mono text-center text-lg tracking-[0.25em] ${
-                                  isDark ? 'bg-black/20 text-rose-300' : 'bg-rose-50/50 text-rose-700 border border-rose-100'
-                                }`}>
-                                  {inviteCode}
-                                </div>
-                                <button
-                                  onClick={copyInviteCode}
-                                  className={`px-6 py-3 rounded-lg font-serif transition-all ${
-                                    isDark ? 'bg-rose-900/50 text-rose-200 hover:bg-rose-800/60' : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
-                                  }`}
-                                >
-                                  Copy
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          <div>
-                            <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                              Chapter Title (Couple Name)
-                            </label>
-                            <input
-                              type="text"
-                              value={coupleName}
-                              onChange={(e) => setCoupleName(e.target.value)}
-                              className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 ${
-                                isDark 
-                                  ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' 
-                                  : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
-                              }`}
-                              placeholder="e.g. Jack & Rose"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                              The Day It Began
-                            </label>
-                            <input
-                              type="date"
-                              value={anniversaryDate}
-                              onChange={(e) => setAnniversaryDate(e.target.value)}
-                              className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 ${
-                                isDark 
-                                  ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' 
-                                  : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
-                              }`}
-                            />
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={handleCoupleUpdate}
-                          disabled={saving}
-                          className={`mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-lg font-serif tracking-wide transition-all ${
-                            isDark
-                              ? 'bg-rose-900/50 text-rose-200 hover:bg-rose-800/60 border border-rose-800/50'
-                              : 'bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-200'
-                          } disabled:opacity-50`}
-                        >
-                          <Save className="w-4 h-4" /> Update Our Story
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Security Tab */}
-                    {activeTab === 'security' && (
-                      <form onSubmit={handlePasswordChange} className="space-y-6">
-                        <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
-                          <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
-                            Privacy Lock
-                          </h3>
-                          <p className={`text-xs font-serif italic mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                            Keep your journal entries safe from prying eyes.
-                          </p>
-                        </div>
-
-                        <div className="space-y-5">
-                          <div>
-                            <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                              Current Lock Key
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showCurrentPassword ? 'text' : 'password'}
-                                value={passwordData.current_password}
-                                onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
-                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
-                                  isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
-                                }`}
-                                placeholder="Enter current password"
-                                required
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
-                              >
-                                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                              New Lock Key
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showNewPassword ? 'text' : 'password'}
-                                value={passwordData.new_password}
-                                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
-                                  isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
-                                }`}
-                                placeholder="Min. 8 characters"
-                                required
-                                minLength={8}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowNewPassword(!showNewPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
-                              >
-                                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
-                              Confirm New Lock Key
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                value={passwordData.confirm_password}
-                                onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
-                                  isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
-                                }`}
-                                placeholder="Type it once more"
-                                required
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
-                              >
-                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <button
-                          type="submit"
-                          disabled={saving}
-                          className={`mt-8 w-full flex items-center justify-center gap-2 py-3 rounded-lg font-serif tracking-wide transition-all ${
-                            isDark
-                              ? 'bg-stone-700/50 text-stone-200 hover:bg-stone-600/60'
-                              : 'bg-stone-800 text-stone-100 hover:bg-stone-700'
-                          } disabled:opacity-50`}
-                        >
-                          {saving ? (
-                            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <>
-                              <Lock className="w-4 h-4" /> Change Lock
-                            </>
-                          )}
-                        </button>
-                      </form>
-                    )}
-
-                    {/* Preferences Tab */}
-                    {activeTab === 'preferences' && (
-                      <div className="space-y-6">
-                        <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
-                          <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
-                            Aesthetics
-                          </h3>
-                          <p className={`text-xs font-serif italic mt-1 ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                            Customize the feeling of your space.
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          {/* Background Theme Selector */}
-                          <div className="space-y-3">
-                            <label className={`block text-xs font-serif tracking-widest uppercase ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                              <div className="flex items-center gap-2">
-                                <Sparkles className="w-4 h-4" />
-                                Background Theme
-                              </div>
-                            </label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {backgroundThemes.map((bgTheme) => {
-                                const isActive = currentBackground === bgTheme.id;
-                                return (
-                                  <button
-                                    key={bgTheme.id}
-                                    onClick={() => handleBackgroundChange(bgTheme.id)}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-serif ${
-                                      isActive
-                                        ? isDark 
-                                          ? 'bg-rose-900/50 text-rose-300 border border-rose-700/50' 
-                                          : 'bg-rose-100 text-rose-700 border border-rose-300'
-                                        : isDark 
-                                          ? 'bg-stone-800/50 text-stone-300 hover:bg-stone-700/50 border border-stone-700/30'
-                                          : 'bg-stone-50/50 text-stone-600 hover:bg-stone-100 border border-stone-200/30'
-                                    }`}
-                                  >
-                                    <span className="flex-shrink-0">{bgTheme.icon}</span>
-                                    <span className="flex-1 text-left truncate">{bgTheme.label}</span>
-                                    {isActive && <Check className="w-3 h-3 text-rose-500 flex-shrink-0" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          <div className="h-px bg-gradient-to-r from-transparent via-stone-300/30 to-transparent my-4" />
-
-                          {/* Falling Petals */}
-                          <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
-                            <div>
-                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
-                                <Flower2 className="inline w-4 h-4 mr-2 text-rose-400" />
-                                Falling Petals
-                              </p>
-                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                                Drifting romantic memories
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleSettingToggle('enablePetals')}
-                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enablePetals ? 'bg-rose-500/80' : 'bg-stone-300'}`}
-                            >
-                              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enablePetals ? 'right-1' : 'left-1'}`} />
-                            </button>
-                          </div>
-
-                          {/* Show Cats - with mobile notice */}
-                          <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Cat className="inline w-4 h-4 text-amber-400" />
-                                <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
-                                  Show Cats
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                                  Cute cat stickers roaming around
-                                </p>
-                                {isMobile && (
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                                    isDark ? 'bg-amber-900/30 text-amber-400 border border-amber-700/30' : 'bg-amber-100 text-amber-700 border border-amber-200'
-                                  }`}>
-                                    <Smartphone className="w-2.5 h-2.5" />
-                                    Desktop only
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleSettingToggle('enableCats')}
-                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enableCats !== false ? 'bg-rose-500/80' : 'bg-stone-300'}`}
-                            >
-                              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enableCats !== false ? 'right-1' : 'left-1'}`} />
-                            </button>
-                          </div>
-
-                          {/* Smooth Turning */}
-                          <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
-                            <div>
-                              <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
-                                <Sparkles className="inline w-4 h-4 mr-2 text-amber-400" />
-                                Smooth Turning
-                              </p>
-                              <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
-                                Page flip animations
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleSettingToggle('enableAnimations')}
-                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enableAnimations ? 'bg-rose-500/80' : 'bg-stone-300'}`}
-                            >
-                              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enableAnimations ? 'right-1' : 'left-1'}`} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      {isOpen && createPortal(
+        <DropdownContent />,
+        document.body
+      )}
+    </>
   );
 };
 

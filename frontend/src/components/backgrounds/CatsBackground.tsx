@@ -400,7 +400,7 @@ const CatsBackground: React.FC = () => {
           bottom: 0,
           pointerEvents: 'none',
           overflow: 'hidden',
-          zIndex: 9999, 
+          zIndex: 9999,
         }}
       >
         {topLayerCats.map((cat) => (
