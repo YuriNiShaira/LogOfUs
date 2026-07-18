@@ -35,8 +35,13 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
 
   const isCompleted = item.status === 'completed';
   
+  // Determine who completed this based on currentUser
+  const isCompletedByMe = (item.completed_by === 'me' || item.completed_by === 'both');
+  const isCompletedByPartner = (item.completed_by === 'shaira' || item.completed_by === 'both');
+  
+  // For the current user's perspective
   const hasCompleted = isCompleted && (
-    (currentUser === 'me' && (item.completed_by === 'me' || item.completed_by === 'both')) ||
+    (currentUser === 'me' && isCompletedByMe) ||
     (currentUser === 'shaira' && (item.completed_by === 'shaira' || item.completed_by === 'both'))
   );
   
@@ -45,7 +50,7 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
     (currentUser === 'shaira' && (item.completed_by === 'me' || item.completed_by === 'both'))
   );
 
-  // ✅ Determine if the item should show as completed for the current user
+  // Determine if the item should show as completed for the current user
   const showAsCompleted = hasCompleted;
 
   let displayLabel = item.status_display || 'Pending';
@@ -56,13 +61,9 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
     } else if (hasCompleted) {
       displayLabel = 'You Completed';
     } else if (partnerCompleted) {
-      displayLabel = 'Partner Completed - Mark Yours';
+      displayLabel = 'Partner Completed';
     }
   }
-
-  const isCompletedBy = (user: string) => {
-    return item.completed_by === user || item.completed_by === 'both';
-  };
 
   return (
     <motion.div
@@ -92,17 +93,18 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
             {displayLabel}
           </span>
           
+          {/* Show the completion labels */}
           {isCompleted && (
             <div className="flex items-center gap-1 text-xs">
-              {isCompletedBy('me') && (
+              {isCompletedByMe && (
                 <span className={`flex items-center gap-0.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                   <User className="w-3 h-3" /> You
                 </span>
               )}
-              {isCompletedBy('me') && isCompletedBy('shaira') && (
+              {isCompletedByMe && isCompletedByPartner && (
                 <span className={isDark ? 'text-stone-500' : 'text-stone-400'}>+</span>
               )}
-              {isCompletedBy('shaira') && (
+              {isCompletedByPartner && (
                 <span className={`flex items-center gap-0.5 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                   <User className="w-3 h-3" /> Partner
                 </span>
@@ -146,7 +148,7 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
       </div>
 
       <div className={`absolute top-4 right-4 flex gap-1 transition-opacity duration-300 ${isHovering ? 'opacity-100' : 'opacity-0'}`}>
-        {/* ✅ Show complete button even if partner completed it, but not if both completed */}
+        {/* Show complete button even if partner completed it, but not if both completed */}
         {(!hasCompleted || !isCompleted) && (
           <button
             onClick={() => onComplete(item)}
@@ -183,12 +185,12 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
       {isCompleted && (
         <div className={`mt-3 pt-3 border-t ${isDark ? 'border-stone-700' : 'border-stone-200'}`}>
           <div className="flex items-center gap-4 text-xs">
-            {isCompletedBy('me') && (
+            {isCompletedByMe && (
               <span className={`flex items-center gap-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                 <CheckCircle className="w-3 h-3" /> You completed this
               </span>
             )}
-            {isCompletedBy('shaira') && (
+            {isCompletedByPartner && (
               <span className={`flex items-center gap-1 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                 <CheckCircle className="w-3 h-3" /> Partner completed this
               </span>
@@ -204,7 +206,7 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
               "{item.completion_notes}"
             </p>
           )}
-          {/* ✅ Show call to action if partner completed but you haven't */}
+          {/* Show call to action if partner completed but you haven't */}
           {partnerCompleted && !hasCompleted && (
             <button
               onClick={() => onComplete(item)}

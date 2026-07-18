@@ -9,12 +9,10 @@ import RomanticBackground from '../components/RomanticBackground';
 import Navbar from '../components/Navbar';
 import BucketListPageContent from '../components/BucketList/BucketListPageContent';
 
-
 const BucketListPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
-  // Removed unused coupleInfo state
   const [currentUser, setCurrentUser] = useState<string>('me');
   const isDarkMode = theme === 'dark';
 
@@ -22,13 +20,22 @@ const BucketListPage: React.FC = () => {
     const fetchCoupleInfo = async () => {
       try {
         const response = await api.get('/auth/couple-info/');
+        const data = response.data;
         
-        if (response.data.partner1_name === user?.display_name) {
+        console.log('Couple Info:', data);
+        console.log('Current User Display Name:', user?.display_name);
+        console.log('Partner 1 Name:', data.partner1_name);
+        console.log('Partner 2 Name:', data.partner2_name);
+        
+        if (data.partner1_name === user?.display_name) {
           setCurrentUser('me');
-        } else if (response.data.partner2_name === user?.display_name) {
+          console.log('Current user is partner 1 (me)');
+        } else if (data.partner2_name === user?.display_name) {
           setCurrentUser('shaira');
+          console.log('Current user is partner 2 (shaira)');
         } else {
           setCurrentUser('me');
+          console.log('Only 1 member, defaulting to me');
         }
       } catch (error) {
         console.error('Error fetching couple info:', error);

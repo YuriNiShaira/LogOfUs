@@ -1,4 +1,4 @@
-import React, { useState, } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Clock,
@@ -14,8 +14,6 @@ import { useTheme } from '../../contexts/ThemeContext';
 import DeleteConfirmModal from '../DeleteConfirmModal';
 import { BucketListCard, BucketListFilters, BucketListStats, CompleteModal, AddEditBucketListModal } from './index';
 import type { BucketListItem, BucketListStats as BucketListStatsType, BucketListFormData } from './bucketlistTypes';
-
-
 
 interface BucketListPageContentProps {
   currentUser: string;
@@ -177,7 +175,12 @@ const BucketListPageContent: React.FC<BucketListPageContentProps> = ({ currentUs
     setDeleteTarget({ id: item.id, name: item.title });
   };
 
-  // Updated filtering logic
+  const handleComplete = (item: BucketListItem) => {
+    setSelectedItem(item);
+    setCompletionNotes('');
+  };
+
+  // Filter items based on category and status
   const filteredItems = items?.filter((item) => {
     if (selectedCategory !== 'all' && item.category !== selectedCategory) return false;
     if (selectedStatus !== 'all' && item.status !== selectedStatus) return false;
@@ -185,10 +188,11 @@ const BucketListPageContent: React.FC<BucketListPageContentProps> = ({ currentUs
   });
 
 
-  // Even if partner completed it, it should still show in "Not Yet" or "Planned" for the current user
   const pendingItems = filteredItems?.filter((i) => {
+    // If status is not completed, show it
     if (i.status !== 'completed') return true;
-    // If status is completed, check if current user has completed it
+    
+    // If status is completed, only show if current user hasn't completed it
     if (currentUser === 'me') {
       return i.completed_by !== 'me' && i.completed_by !== 'both';
     } else {
@@ -196,14 +200,15 @@ const BucketListPageContent: React.FC<BucketListPageContentProps> = ({ currentUs
     }
   }) || [];
 
+
   const plannedItems = filteredItems?.filter((i) => {
-    if (i.status !== 'planned') return false;
-    // If planned but partner completed it, it should still show here
-    return true;
+    return i.status === 'planned';
   }) || [];
+
 
   const completedItems = filteredItems?.filter((i) => {
     if (i.status !== 'completed') return false;
+    
     // Only show in Achieved if current user has completed it
     if (currentUser === 'me') {
       return i.completed_by === 'me' || i.completed_by === 'both';
@@ -287,7 +292,7 @@ const BucketListPageContent: React.FC<BucketListPageContentProps> = ({ currentUs
                   theme={theme}
                   onEdit={handleEdit}
                   onDelete={handleDeleteClick}
-                  onComplete={(item) => setSelectedItem(item)}
+                  onComplete={handleComplete}
                   currentUser={currentUser}
                 />
               ))}
@@ -319,7 +324,7 @@ const BucketListPageContent: React.FC<BucketListPageContentProps> = ({ currentUs
                   theme={theme}
                   onEdit={handleEdit}
                   onDelete={handleDeleteClick}
-                  onComplete={(item) => setSelectedItem(item)}
+                  onComplete={handleComplete}
                   currentUser={currentUser}
                 />
               ))}
@@ -351,7 +356,7 @@ const BucketListPageContent: React.FC<BucketListPageContentProps> = ({ currentUs
                   theme={theme}
                   onEdit={handleEdit}
                   onDelete={handleDeleteClick}
-                  onComplete={(item) => setSelectedItem(item)}
+                  onComplete={handleComplete}
                   currentUser={currentUser}
                 />
               ))}
