@@ -40,8 +40,23 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
   onConfirm,
 }) => {
   const isDark = theme === 'dark';
+  const [selectedOption, setSelectedOption] = React.useState<string>('me');
+
+  // ✅ Set default selected option based on current completion status
+  React.useEffect(() => {
+    if (selectedItem?.completed_by) {
+      setSelectedOption(selectedItem.completed_by);
+    } else {
+      setSelectedOption('me');
+    }
+  }, [selectedItem]);
 
   if (!selectedItem) return null;
+
+  // ✅ Check if both have already completed
+  const isBothCompleted = selectedItem.completed_by === 'both';
+  const isCompletedByMe = selectedItem.completed_by === 'me' || selectedItem.completed_by === 'both';
+  const isCompletedByPartner = selectedItem.completed_by === 'shaira' || selectedItem.completed_by === 'both';
 
   return (
     <AnimatePresence>
@@ -68,8 +83,17 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
           
           <div className="text-center mb-8 relative z-10">
             <div className="text-4xl mb-4 drop-shadow-sm">🎯</div>
-            <h3 className={`font-serif text-3xl mb-2 tracking-wide ${isDark ? 'text-rose-100' : 'text-rose-950'}`}>Dream Achieved</h3>
-            <p className={`font-handwriting text-2xl ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>"{selectedItem.title}"</p>
+            <h3 className={`font-serif text-3xl mb-2 tracking-wide ${isDark ? 'text-rose-100' : 'text-rose-950'}`}>
+              {selectedItem.completed_by ? 'Update Completion' : 'Dream Achieved'}
+            </h3>
+            <p className={`font-handwriting text-2xl ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>
+              "{selectedItem.title}"
+            </p>
+            {selectedItem.completed_by && (
+              <p className={`text-xs font-serif italic mt-2 ${isDark ? 'text-rose-400/60' : 'text-rose-500/60'}`}>
+                Currently: {selectedItem.completed_by === 'me' ? 'You' : selectedItem.completed_by === 'shaira' ? 'Partner' : 'Both'}
+              </p>
+            )}
           </div>
 
           <div className="space-y-8 relative z-10">
@@ -78,20 +102,45 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
                 Who completed this?
               </label>
               <div className="grid grid-cols-3 gap-3">
-                {['me', 'shaira', 'both'].map((who) => (
-                  <button
-                    key={who}
-                    onClick={() => onConfirm({ id: selectedItem.id, completed_by: who, notes: completionNotes })}
-                    className={`py-2 text-xs font-serif uppercase tracking-widest border rounded-full transition-all ${
-                      isDark 
-                        ? 'border-rose-900/60 text-rose-300 hover:border-rose-600 hover:bg-[#4c0519]/40' 
-                        : 'border-rose-200 text-rose-700 hover:border-rose-300 hover:bg-rose-50'
-                    }`}
-                  >
-                    {who === 'me' ? 'Me' : who === 'shaira' ? 'Partner' : 'Both'}
-                  </button>
-                ))}
+                {[
+                  { value: 'me', label: 'Me', color: 'blue' },
+                  { value: 'shaira', label: 'Partner', color: 'purple' },
+                  { value: 'both', label: 'Both', color: 'emerald' },
+                ].map((option) => {
+                  const isActive = selectedOption === option.value;
+                  const isDisabled = option.value === 'both' && isBothCompleted;
+                  
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => setSelectedOption(option.value)}
+                      disabled={isDisabled}
+                      className={`py-2 text-xs font-serif uppercase tracking-widest border rounded-full transition-all ${
+                        isActive
+                          ? isDark 
+                            ? `bg-${option.color}-900/50 text-${option.color}-300 border-${option.color}-700`
+                            : `bg-${option.color}-100 text-${option.color}-700 border-${option.color}-300`
+                          : isDark 
+                            ? 'border-rose-900/60 text-rose-300 hover:border-rose-600 hover:bg-[#4c0519]/40'
+                            : 'border-rose-200 text-rose-700 hover:border-rose-300 hover:bg-rose-50'
+                      } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      {option.label}
+                      {isActive && (
+                        <span className="ml-1">✓</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+              {/* ✅ Show helper text */}
+              {selectedItem.completed_by && selectedItem.completed_by !== 'both' && (
+                <p className={`text-center text-xs font-serif italic mt-3 ${isDark ? 'text-rose-400/50' : 'text-rose-500/50'}`}>
+                  {selectedItem.completed_by === 'me' 
+                    ? 'Your partner can still mark it as completed too!' 
+                    : 'You can still mark it as completed too!'}
+                </p>
+              )}
             </div>
 
             <div>
@@ -111,11 +160,31 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
               />
             </div>
 
-            <button onClick={onClose} className={`w-full font-serif italic text-sm transition-colors ${
-              isDark ? 'text-rose-500/60 hover:text-rose-400' : 'text-rose-400 hover:text-rose-600'
-            }`}>
-              Nevermind
-            </button>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  // ✅ If already completed, allow updating to 'both'
+                  const finalCompletedBy = selectedOption;
+                  onConfirm({ 
+                    id: selectedItem.id, 
+                    completed_by: finalCompletedBy, 
+                    notes: completionNotes 
+                  });
+                }}
+                className={`w-full py-3 rounded-full font-serif font-bold transition-all ${
+                  isDark
+                    ? 'bg-rose-800 hover:bg-rose-700 text-rose-50 shadow-md'
+                    : 'bg-rose-800 hover:bg-rose-700 text-rose-50 shadow-md'
+                }`}
+              >
+                {selectedItem.completed_by ? 'Update Completion' : 'Mark as Completed'}
+              </button>
+              <button onClick={onClose} className={`w-full font-serif italic text-sm transition-colors ${
+                isDark ? 'text-rose-500/60 hover:text-rose-400' : 'text-rose-400 hover:text-rose-600'
+              }`}>
+                Cancel
+              </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>

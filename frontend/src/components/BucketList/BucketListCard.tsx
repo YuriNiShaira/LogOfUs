@@ -45,6 +45,9 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
     (currentUser === 'shaira' && (item.completed_by === 'me' || item.completed_by === 'both'))
   );
 
+  // ✅ Determine if the item should show as completed for the current user
+  const showAsCompleted = hasCompleted;
+
   let displayLabel = item.status_display || 'Pending';
   
   if (isCompleted) {
@@ -53,11 +56,10 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
     } else if (hasCompleted) {
       displayLabel = 'You Completed';
     } else if (partnerCompleted) {
-      displayLabel = 'Partner Completed';
+      displayLabel = 'Partner Completed - Mark Yours';
     }
   }
 
-  // Helper to check if a specific user completed the item
   const isCompletedBy = (user: string) => {
     return item.completed_by === user || item.completed_by === 'both';
   };
@@ -79,15 +81,13 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className={`text-xs font-serif uppercase tracking-wider px-3 py-1 rounded-full border ${
-            isCompleted
+            isCompleted && showAsCompleted
               ? hasCompleted && partnerCompleted
                 ? isDark ? 'bg-emerald-900/40 text-emerald-300 border-emerald-700' : 'bg-emerald-100 text-emerald-700 border-emerald-300'
-                : hasCompleted
-                  ? isDark ? 'bg-blue-900/40 text-blue-300 border-blue-700' : 'bg-blue-100 text-blue-700 border-blue-300'
-                  : partnerCompleted
-                    ? isDark ? 'bg-purple-900/40 text-purple-300 border-purple-700' : 'bg-purple-100 text-purple-700 border-purple-300'
-                    : isDark ? 'bg-amber-900/40 text-amber-300 border-amber-700' : 'bg-amber-100 text-amber-700 border-amber-300'
-              : isDark ? 'bg-amber-900/40 text-amber-300 border-amber-700' : 'bg-amber-100 text-amber-700 border-amber-300'
+                : isDark ? 'bg-blue-900/40 text-blue-300 border-blue-700' : 'bg-blue-100 text-blue-700 border-blue-300'
+              : partnerCompleted && !hasCompleted
+                ? isDark ? 'bg-purple-900/40 text-purple-300 border-purple-700' : 'bg-purple-100 text-purple-700 border-purple-300'
+                : isDark ? 'bg-amber-900/40 text-amber-300 border-amber-700' : 'bg-amber-100 text-amber-700 border-amber-300'
           }`}>
             {displayLabel}
           </span>
@@ -119,7 +119,7 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
 
       <h3 className={`text-xl font-serif font-bold mb-2 ${isDark ? 'text-rose-100' : 'text-gray-800'}`}>
         {item.title}
-        {isCompleted && hasCompleted && (
+        {isCompleted && showAsCompleted && (
           <CheckCircle className="inline ml-2 w-4 h-4 text-emerald-500" />
         )}
       </h3>
@@ -146,13 +146,14 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
       </div>
 
       <div className={`absolute top-4 right-4 flex gap-1 transition-opacity duration-300 ${isHovering ? 'opacity-100' : 'opacity-0'}`}>
-        {!isCompleted && (
+        {/* ✅ Show complete button even if partner completed it, but not if both completed */}
+        {(!hasCompleted || !isCompleted) && (
           <button
             onClick={() => onComplete(item)}
             className={`p-1.5 rounded transition-colors ${
               isDark ? 'hover:bg-emerald-900/30 text-emerald-400' : 'hover:bg-emerald-50 text-emerald-500'
             }`}
-            title="Mark as Completed"
+            title={partnerCompleted ? 'Mark yours as completed too!' : 'Mark as Completed'}
           >
             <CheckCircle className="w-4 h-4" />
           </button>
@@ -202,6 +203,17 @@ const BucketListCard: React.FC<BucketListCardProps> = ({
             <p className={`mt-1 text-xs font-serif italic ${isDark ? 'text-stone-400' : 'text-gray-500'}`}>
               "{item.completion_notes}"
             </p>
+          )}
+          {/* ✅ Show call to action if partner completed but you haven't */}
+          {partnerCompleted && !hasCompleted && (
+            <button
+              onClick={() => onComplete(item)}
+              className={`mt-2 text-xs font-serif italic underline transition-colors ${
+                isDark ? 'text-emerald-400 hover:text-emerald-300' : 'text-emerald-600 hover:text-emerald-700'
+              }`}
+            >
+              Mark yours as completed too →
+            </button>
           )}
         </div>
       )}

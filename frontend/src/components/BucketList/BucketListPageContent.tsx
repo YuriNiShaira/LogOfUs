@@ -177,15 +177,40 @@ const BucketListPageContent: React.FC<BucketListPageContentProps> = ({ currentUs
     setDeleteTarget({ id: item.id, name: item.title });
   };
 
+  // Updated filtering logic
   const filteredItems = items?.filter((item) => {
     if (selectedCategory !== 'all' && item.category !== selectedCategory) return false;
     if (selectedStatus !== 'all' && item.status !== selectedStatus) return false;
     return true;
   });
 
-  const pendingItems = filteredItems?.filter((i) => i.status === 'pending') || [];
-  const plannedItems = filteredItems?.filter((i) => i.status === 'planned') || [];
-  const completedItems = filteredItems?.filter((i) => i.status === 'completed') || [];
+
+  // Even if partner completed it, it should still show in "Not Yet" or "Planned" for the current user
+  const pendingItems = filteredItems?.filter((i) => {
+    if (i.status !== 'completed') return true;
+    // If status is completed, check if current user has completed it
+    if (currentUser === 'me') {
+      return i.completed_by !== 'me' && i.completed_by !== 'both';
+    } else {
+      return i.completed_by !== 'shaira' && i.completed_by !== 'both';
+    }
+  }) || [];
+
+  const plannedItems = filteredItems?.filter((i) => {
+    if (i.status !== 'planned') return false;
+    // If planned but partner completed it, it should still show here
+    return true;
+  }) || [];
+
+  const completedItems = filteredItems?.filter((i) => {
+    if (i.status !== 'completed') return false;
+    // Only show in Achieved if current user has completed it
+    if (currentUser === 'me') {
+      return i.completed_by === 'me' || i.completed_by === 'both';
+    } else {
+      return i.completed_by === 'shaira' || i.completed_by === 'both';
+    }
+  }) || [];
 
   return (
     <div className="space-y-10 max-w-7xl mx-auto">
