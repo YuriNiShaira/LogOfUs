@@ -1,7 +1,24 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 const CatsBackground: React.FC = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // If mobile, don't render anything
+  if (isMobile) {
+    return null;
+  }
+
   const catStickers = useMemo(() => [
     {
       id: 'cat1',
