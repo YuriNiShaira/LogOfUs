@@ -19,7 +19,6 @@ const BucketListFilters: React.FC<BucketListFiltersProps> = ({
 }) => {
   const isDark = theme === 'dark';
 
-  // Premium Stationery Palette
   const selectBg = isDark ? 'bg-[#1a050f]/60 hover:bg-[#2a0815]/80' : 'bg-[#FFFAF0]/80 hover:bg-white';
   const borderColor = isDark ? 'border-rose-900/50' : 'border-rose-200/80';
   const textColor = isDark ? 'text-rose-200' : 'text-rose-800';
@@ -29,7 +28,6 @@ const BucketListFilters: React.FC<BucketListFiltersProps> = ({
 
   return (
     <div className="flex flex-wrap items-center gap-3 mb-8">
-      {/* Elegant Label */}
       <div className={`flex items-center gap-2 mr-2 ${isDark ? 'text-rose-400' : 'text-rose-500'}`}>
         <SlidersHorizontal className="w-3.5 h-3.5" />
         <span className="text-2.5 uppercase font-serif tracking-[0.3em] font-semibold">
@@ -37,7 +35,6 @@ const BucketListFilters: React.FC<BucketListFiltersProps> = ({
         </span>
       </div>
 
-      {/* Category Select Wrapper */}
       <div className="relative inline-block group">
         <select
           value={selectedCategory}
@@ -60,7 +57,6 @@ const BucketListFilters: React.FC<BucketListFiltersProps> = ({
         <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none transition-transform group-hover:translate-y-[-30%] ${iconColor}`} />
       </div>
 
-      {/* Status Select Wrapper */}
       <div className="relative inline-block group">
         <select
           value={selectedStatus}

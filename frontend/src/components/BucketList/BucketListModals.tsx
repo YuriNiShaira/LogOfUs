@@ -23,7 +23,6 @@ export interface AddEditModalProps {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }
 
-// Upgraded Washi Tape to adapt to the premium theme
 const WashiTape = ({ rotate = '-rotate-2', isDark = false, className = '' }) => (
   <div className={`absolute -top-3 w-20 h-6 backdrop-blur-md shadow-sm z-20 ${rotate} ${className} ${
     isDark ? 'bg-rose-900/40 border border-black/10' : 'bg-rose-200/50 border border-black/5'
@@ -63,13 +62,12 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
           onClick={(e) => e.stopPropagation()}
           role="dialog"
         >
-          {/* Paper Texture */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-multiply dark:mix-blend-overlay rounded-sm" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
 
           <WashiTape rotate="rotate-2" isDark={isDark} className="left-1/2 -translate-x-1/2" />
           
           <div className="text-center mb-8 relative z-10">
-            <div className="text-5xl mb-4 drop-shadow-sm">✨</div>
+            <div className="text-4xl mb-4 drop-shadow-sm">🎯</div>
             <h3 className={`font-serif text-3xl mb-2 tracking-wide ${isDark ? 'text-rose-100' : 'text-rose-950'}`}>Dream Achieved</h3>
             <p className={`font-handwriting text-2xl ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>"{selectedItem.title}"</p>
           </div>
@@ -90,7 +88,7 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
                         : 'border-rose-200 text-rose-700 hover:border-rose-300 hover:bg-rose-50'
                     }`}
                   >
-                    {who === 'me' ? 'Me' : who === 'shaira' ? 'Shaira' : 'Both'}
+                    {who === 'me' ? 'Me' : who === 'shaira' ? 'Partner' : 'Both'}
                   </button>
                 ))}
               </div>
@@ -156,7 +154,6 @@ export const AddEditBucketListModal: React.FC<AddEditModalProps> = ({
             onClick={(e) => e.stopPropagation()}
             role="dialog"
           >
-            {/* Paper Texture */}
             <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-multiply dark:mix-blend-overlay rounded-sm" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
 
             <WashiTape rotate="-rotate-2" isDark={isDark} className="left-1/2 -translate-x-1/2" />
@@ -229,9 +226,9 @@ export const AddEditBucketListModal: React.FC<AddEditModalProps> = ({
                       isDark ? 'border-rose-900 text-rose-200 focus:border-rose-500' : 'border-rose-300 text-rose-900 focus:border-rose-400'
                     }`}
                   >
-                    <option value={1} className={isDark ? 'bg-[#2a0815]' : 'bg-[#FFFAF0]'}>⭐ Low</option>
-                    <option value={2} className={isDark ? 'bg-[#2a0815]' : 'bg-[#FFFAF0]'}>⭐⭐ Medium</option>
-                    <option value={3} className={isDark ? 'bg-[#2a0815]' : 'bg-[#FFFAF0]'}>⭐⭐⭐ High</option>
+                    <option value={1} className={isDark ? 'bg-[#2a0815]' : 'bg-[#FFFAF0]'}>Low</option>
+                    <option value={2} className={isDark ? 'bg-[#2a0815]' : 'bg-[#FFFAF0]'}>Medium</option>
+                    <option value={3} className={isDark ? 'bg-[#2a0815]' : 'bg-[#FFFAF0]'}>High</option>
                   </select>
                 </div>
               </div>
