@@ -317,6 +317,11 @@ class BucketListItem(models.Model):
     added_by = models.CharField(max_length=20, choices=[('me', 'Me'), ('shaira', 'Shaira')], default='me')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     priority = models.IntegerField(default=1, choices=[(1, '⭐ Low'), (2, '⭐⭐ Medium'), (3, '⭐⭐⭐ High')])
+    
+    # for partner-specific completion
+    completed_by_me = models.BooleanField(default=False)
+    completed_by_shaira = models.BooleanField(default=False)
+    
     completed_at = models.DateTimeField(null=True, blank=True)
     completed_by = models.CharField(max_length=20, choices=[('me', 'Me'), ('shaira', 'Shaira'), ('both', 'Both')], null=True, blank=True)
     completion_notes = models.TextField(blank=True)
@@ -337,6 +342,15 @@ class BucketListItem(models.Model):
         self.completed_at = timezone.now()
         if notes:
             self.completion_notes = notes
+        
+        if completed_by == 'me':
+            self.completed_by_me = True
+        elif completed_by == 'shaira':
+            self.completed_by_shaira = True
+        elif completed_by == 'both':
+            self.completed_by_me = True
+            self.completed_by_shaira = True
+        
         self.save()
 
 

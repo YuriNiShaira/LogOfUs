@@ -124,6 +124,9 @@ class BucketListItemSerializer(serializers.ModelSerializer):
     status_display = serializers.SerializerMethodField()
     priority_display = serializers.SerializerMethodField()
     added_by_display = serializers.SerializerMethodField()
+    completed_by_me = serializers.BooleanField(read_only=True)
+    completed_by_shaira = serializers.BooleanField(read_only=True)
+    completion_status = serializers.SerializerMethodField()
 
     class Meta:
         model = BucketListItem
@@ -141,6 +144,10 @@ class BucketListItemSerializer(serializers.ModelSerializer):
     
     def get_added_by_display(self, obj):
         return obj.get_added_by_display()
+    
+    def get_completion_status(self, obj):
+        """Return completion status for both partners"""
+        return {'me': obj.completed_by_me, 'shaira': obj.completed_by_shaira,}
 
 
 class PetPhotoSerializer(serializers.ModelSerializer):
