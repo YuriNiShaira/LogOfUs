@@ -42,7 +42,6 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
   const isDark = theme === 'dark';
   const [selectedOption, setSelectedOption] = React.useState<string>('me');
 
-  // ✅ Set default selected option based on current completion status
   React.useEffect(() => {
     if (selectedItem?.completed_by) {
       setSelectedOption(selectedItem.completed_by);
@@ -53,10 +52,7 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
 
   if (!selectedItem) return null;
 
-  // ✅ Check if both have already completed
   const isBothCompleted = selectedItem.completed_by === 'both';
-  const isCompletedByMe = selectedItem.completed_by === 'me' || selectedItem.completed_by === 'both';
-  const isCompletedByPartner = selectedItem.completed_by === 'shaira' || selectedItem.completed_by === 'both';
 
   return (
     <AnimatePresence>
@@ -133,7 +129,6 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
                   );
                 })}
               </div>
-              {/* ✅ Show helper text */}
               {selectedItem.completed_by && selectedItem.completed_by !== 'both' && (
                 <p className={`text-center text-xs font-serif italic mt-3 ${isDark ? 'text-rose-400/50' : 'text-rose-500/50'}`}>
                   {selectedItem.completed_by === 'me' 
@@ -163,11 +158,9 @@ export const CompleteModal: React.FC<CompleteModalProps> = ({
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => {
-                  // ✅ If already completed, allow updating to 'both'
-                  const finalCompletedBy = selectedOption;
                   onConfirm({ 
                     id: selectedItem.id, 
-                    completed_by: finalCompletedBy, 
+                    completed_by: selectedOption, 
                     notes: completionNotes 
                   });
                 }}
