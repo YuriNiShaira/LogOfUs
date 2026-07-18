@@ -1,4 +1,3 @@
-// frontend/src/components/TimeCounter.tsx
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -26,16 +25,16 @@ interface TimeTogether {
   seconds: number;
 }
 
-// --- SVG COMPONENTS (lightened to float on the background) ---
-const BoySVG = ({ color }: { color: string }) => (
+// --- SVG COMPONENTS (No animation on mobile) ---
+const BoySVG = ({ color, isMobile }: { color: string; isMobile: boolean }) => (
   <motion.svg
     width="45"
     height="65"
     viewBox="0 0 32 50"
     className="overflow-visible"
     style={{ color }}
-    animate={{ y: [0, -2, 0] }}
-    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+    animate={!isMobile ? { y: [0, -2, 0] } : {}}
+    transition={!isMobile ? { duration: 3, repeat: Infinity, ease: 'easeInOut' } : {}}
   >
     <circle cx="16" cy="10" r="7" fill="currentColor" opacity="0.85" />
     <path d="M16 18 V36" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" opacity="0.85" />
@@ -45,15 +44,15 @@ const BoySVG = ({ color }: { color: string }) => (
   </motion.svg>
 );
 
-const GirlSVG = ({ color }: { color: string }) => (
+const GirlSVG = ({ color, isMobile }: { color: string; isMobile: boolean }) => (
   <motion.svg
     width="45"
     height="65"
     viewBox="0 0 32 50"
     className="overflow-visible"
     style={{ color }}
-    animate={{ y: [0, -2, 0] }}
-    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+    animate={!isMobile ? { y: [0, -2, 0] } : {}}
+    transition={!isMobile ? { duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.5 } : {}}
   >
     <circle cx="16" cy="10" r="7" fill="currentColor" opacity="0.85" />
     <path d="M16 17 L7 37 H25 Z" fill="currentColor" stroke="currentColor" strokeWidth="2" opacity="0.85" />
@@ -70,6 +69,17 @@ const TimeCounter: React.FC<TimeCounterProps> = ({ anniversaryDate }) => {
     years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0,
   });
   const [isDateValid, setIsDateValid] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const isDark = theme === 'dark';
   
@@ -164,15 +174,15 @@ const TimeCounter: React.FC<TimeCounterProps> = ({ anniversaryDate }) => {
           {/* Faint inner dashed frame */}
           <div className={`absolute inset-2 rounded-[1.6rem] border border-dashed pointer-events-none opacity-30 ${mainBorder}`} />
           
-          {/* Boy & Girl */}
+          {/* Boy & Girl - No floating animation on mobile */}
           <div className="absolute -top-15.75 left-4 md:left-12 z-30">
-            <BoySVG color={brandColor} />
+            <BoySVG color={brandColor} isMobile={isMobile} />
           </div>
           <div className="absolute -top-15.75 right-4 md:right-12 z-30">
-            <GirlSVG color={brandColor} />
+            <GirlSVG color={brandColor} isMobile={isMobile} />
           </div>
 
-          {/* Connecting String & Heart */}
+          {/* Connecting String & Heart - No pulse animation on mobile */}
           <div className="absolute -top-11.25 left-13.75 right-13.75 md:left-21.25 md:right-21.25 h-15 pointer-events-none z-20">
             <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 40">
               <path
@@ -185,15 +195,22 @@ const TimeCounter: React.FC<TimeCounterProps> = ({ anniversaryDate }) => {
               />
             </svg>
             <div className="absolute left-1/2 top-7 -translate-x-1/2 -translate-y-1/2">
-              <motion.div
-                animate={{ scale: [1, 1.15, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              >
+              {!isMobile ? (
+                <motion.div
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <Heart
+                    className="w-6 h-6 fill-current drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)]"
+                    style={{ color: brandColor }}
+                  />
+                </motion.div>
+              ) : (
                 <Heart
                   className="w-6 h-6 fill-current drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)]"
                   style={{ color: brandColor }}
                 />
-              </motion.div>
+              )}
             </div>
           </div>
 
@@ -204,14 +221,21 @@ const TimeCounter: React.FC<TimeCounterProps> = ({ anniversaryDate }) => {
                 key={item.label}
                 className="relative flex flex-col items-center justify-center text-center"
               >
-                <motion.div
-                  key={item.value}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className={`text-4xl sm:text-5xl md:text-6xl font-serif font-medium tracking-tight ${numberText}`}
-                >
-                  {formatNumber(item.value)}
-                </motion.div>
+                {/* No scale animation on mobile para iwas jitter */}
+                {!isMobile ? (
+                  <motion.div
+                    key={item.value}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`text-4xl sm:text-5xl md:text-6xl font-serif font-medium tracking-tight ${numberText}`}
+                  >
+                    {formatNumber(item.value)}
+                  </motion.div>
+                ) : (
+                  <div className={`text-4xl sm:text-5xl md:text-6xl font-serif font-medium tracking-tight ${numberText}`}>
+                    {formatNumber(item.value)}
+                  </div>
+                )}
 
                 <div className={`mt-2 text-2.5 md:text-xs font-serif italic tracking-[0.15em] ${subText}`}>
                   {item.label}
