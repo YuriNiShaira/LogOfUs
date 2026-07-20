@@ -101,7 +101,11 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/80 p-4 select-none"
+          className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 select-none"
+          style={{ 
+            zIndex: 999999,  // ✅ SUPER HIGH Z-INDEX para sa modal overlay
+            position: 'fixed'
+          }}
           onClick={handleClose}
         >
           <motion.div
@@ -111,6 +115,7 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             // CAMERA BODY - added max-h-[90vh] to prevent it from ever growing larger than the screen
             className="relative flex w-full max-w-4xl aspect-[16/10] sm:aspect-[16/9] max-h-[90vh] bg-[#2a2b2e] rounded-[32px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.2)] border border-[#1a1a1c]"
+            style={{ zIndex: 1000000 }}  // ✅ Even higher para sa modal content
             onClick={(e) => e.stopPropagation()}
           >
             {/* Viewfinder Bump (Top Center) */}

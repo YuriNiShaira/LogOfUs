@@ -141,26 +141,28 @@ const LoveLetterManager: React.FC = () => {
 
   return (
     <>
-      {/* Floating Action Button - Wax Seal Style */}
+      {/* Floating Action Button - Wax Seal Style - with high z-index */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-linear-to-br from-rose-600 to-rose-900 text-white p-4 rounded-full shadow-[0_4px_15px_rgba(159,18,57,0.4)] border-2 border-rose-400 hover:shadow-[0_6px_20px_rgba(159,18,57,0.6)] transition-all duration-300 flex items-center justify-center group"
+        className="fixed bottom-6 right-6 bg-linear-to-br from-rose-600 to-rose-900 text-white p-4 rounded-full shadow-[0_4px_15px_rgba(159,18,57,0.4)] border-2 border-rose-400 hover:shadow-[0_6px_20px_rgba(159,18,57,0.6)] transition-all duration-300 flex items-center justify-center group"
+        style={{ zIndex: 100000 }} // ✅ SUPER HIGH Z-INDEX para sa FAB
         title="Open Love Letters"
       >
         <div className="absolute inset-1 rounded-full border border-rose-400/50"></div>
         <Feather className="w-6 h-6 transform -rotate-12 group-hover:rotate-0 transition-transform duration-500" />
       </motion.button>
 
-      {/* Manager Modal */}
+      {/* Manager Modal - with SUPER HIGH Z-INDEX */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 sm:p-6"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+            style={{ zIndex: 999999 }} // ✅ SUPER HIGH Z-INDEX para sa modal overlay
             onClick={() => setIsOpen(false)}
           >
             <motion.div
@@ -171,6 +173,7 @@ const LoveLetterManager: React.FC = () => {
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               /* Added force-light-theme to protect against global dark mode */
               className="relative bg-[#FFFAF0] rounded-sm w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-[0_0_40px_rgba(0,0,0,0.3)] border-8 border-white ring-1 ring-rose-900/10 force-light-theme"
+              style={{ zIndex: 1000000 }} // ✅ Even higher para sa modal content
               onClick={(e) => e.stopPropagation()}
             >
               {/* Subtle paper texture overlay */}
@@ -191,6 +194,7 @@ const LoveLetterManager: React.FC = () => {
                   <button
                     onClick={() => setIsOpen(false)}
                     className="absolute right-0 top-0 p-2 text-rose-300 hover:text-rose-600 transition-colors"
+                    style={{ zIndex: 1000001 }} // ✅ Pinakamataas para sa close button
                   >
                     <X className="w-6 h-6" />
                   </button>
