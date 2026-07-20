@@ -853,7 +853,7 @@ const Envelope: React.FC = () => {
             transition={{ duration: 0.4 }}
             className="fixed inset-0 flex items-center justify-center bg-rose-950/30 p-4 sm:p-6"
             style={{ 
-              zIndex: 999999, 
+              zIndex: 999999,  
               position: 'fixed'
             }}
             onClick={handleClose}
@@ -864,7 +864,7 @@ const Envelope: React.FC = () => {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", damping: 22, stiffness: 150, delay: 0.1 }}
               className="w-full max-w-2xl"
-              style={{ zIndex: 1000000 }} 
+              style={{ zIndex: 1000000 }}  
               onClick={(e) => e.stopPropagation()}
             >
               <div className="paper-bg paper-edge rounded-sm shadow-2xl overflow-hidden relative">
@@ -912,7 +912,7 @@ const Envelope: React.FC = () => {
               transition={{ delay: 0.5 }} 
               onClick={handleClose} 
               className="absolute top-4 right-4 md:top-8 md:right-8 rounded-full p-2.5 bg-white/60 backdrop-blur-sm hover:bg-white/90 text-rose-950 transition-all shadow-md cursor-pointer"
-              style={{ zIndex: 1000001 }} 
+              style={{ zIndex: 1000001 }}  
             >
               <X className="h-5 w-5" />
             </motion.button>

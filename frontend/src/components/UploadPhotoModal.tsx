@@ -103,7 +103,7 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
           transition={{ duration: 0.2 }}
           className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 select-none"
           style={{ 
-            zIndex: 999999,  // ✅ SUPER HIGH Z-INDEX para sa modal overlay
+            zIndex: 999999,
             position: 'fixed'
           }}
           onClick={handleClose}
@@ -113,9 +113,8 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            // CAMERA BODY - added max-h-[90vh] to prevent it from ever growing larger than the screen
             className="relative flex w-full max-w-4xl aspect-[16/10] sm:aspect-[16/9] max-h-[90vh] bg-[#2a2b2e] rounded-[32px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.2)] border border-[#1a1a1c]"
-            style={{ zIndex: 1000000 }}  // ✅ Even higher para sa modal content
+            style={{ zIndex: 1000000 }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Viewfinder Bump (Top Center) */}
@@ -127,9 +126,9 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
             <div className="absolute top-12 -left-3 w-4 h-8 bg-zinc-400 rounded-l-md border border-zinc-500 shadow-md"></div>
             <div className="absolute top-12 -right-3 w-4 h-8 bg-zinc-400 rounded-r-md border border-zinc-500 shadow-md"></div>
 
-            {/* Left side: Screen area - added min-h-0 to allow shrinking */}
+            {/* Left side: Screen area */}
             <div className="flex-1 p-6 sm:p-8 flex flex-col min-h-0">
-              {/* LCD Screen Bezel - added min-h-0 */}
+              {/* LCD Screen Bezel */}
               <div className="flex-1 bg-[#111] p-3 rounded-lg shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] border border-[#222] flex flex-col min-h-0 relative">
                 
                 {/* Brand / Model text above screen */}
@@ -137,7 +136,7 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
                   LUMINA X-1
                 </div>
 
-                {/* Actual LCD Screen - added min-h-0 */}
+                {/* Actual LCD Screen */}
                 <div 
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
