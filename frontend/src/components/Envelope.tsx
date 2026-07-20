@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Sparkles, X, Stamp, Camera } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -292,9 +293,9 @@ const ModernFrame: React.FC<{
         {/* Status message */}
         <span className="text-[8px] text-rose-400/40 font-serif tracking-wider text-center">
           {!primaryImage 
-            ? '✨ add your photo to begin' 
+            ? 'add your photo to begin' 
             : hasHoverImage 
-              ? '✦ hover to reveal' 
+              ? 'hover to reveal' 
               : 'add a hover photo'}
         </span>
       </div>
@@ -321,6 +322,18 @@ const Envelope: React.FC = () => {
   const [isUploadingHover, setIsUploadingHover] = useState(false);
   
   const timeoutsRef = useRef<number[]>([]);
+
+  // SCROLL LOCK for letter modal
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showModal]);
 
   // Fetch love letters from API
   const { data: loveLetters, isLoading, isError } = useQuery<LoveLetter[]>({
@@ -376,7 +389,7 @@ const Envelope: React.FC = () => {
   const isDark = theme === 'dark';
   const currentUserId = user?.id;
   
-  // ✅ FIX: More reliable isPartner1 detection
+  // More reliable isPartner1 detection
   const isPartner1 = useMemo(() => {
     if (!coupleInfo || !userProfile) {
       return true;
@@ -399,21 +412,21 @@ const Envelope: React.FC = () => {
   const partnerPhoto = partnerProfile?.profile_picture || null;
   const partnerHoverPhoto = partnerProfile?.hover_profile_picture || null;
 
-  // ✅ FIX: Open upload modal with specific target and type
+  // Open upload modal with specific target and type
   const openUploadModal = (type: 'main' | 'hover', target: 'partner1' | 'partner2') => {
-    console.log('📤 Opening upload modal for:', target, 'type:', type);
+    console.log('Opening upload modal for:', target, 'type:', type);
     setUploadType(type);
     setUploadTarget(target);
     setUploadModalOpen(true);
   };
 
-  // ✅ UPDATED: Handle photo upload with target as form data
+  // Handle photo upload with target as form data
   const handleUpload = async (file: File) => {
     const isMain = uploadType === 'main';
     const target = uploadTarget;
     
-    console.log('📤 Uploading for target:', target);
-    console.log('📤 Upload type:', isMain ? 'main' : 'hover');
+    console.log('Uploading for target:', target);
+    console.log('Upload type:', isMain ? 'main' : 'hover');
     
     if (isMain) setIsUploading(true);
     else setIsUploadingHover(true);
@@ -426,17 +439,17 @@ const Envelope: React.FC = () => {
       if (currentUserId) {
         formData.append('user_id', String(currentUserId));
       }
-      // ✅ Add target to form data - this tells the backend who to update
+      // Add target to form data - this tells the backend who to update
       formData.append('target', target === 'partner2' ? 'partner' : 'self');
 
-      // ✅ Use the regular endpoint with target parameter
+      // Use the regular endpoint with target parameter
       let endpoint = isMain 
         ? '/auth/upload-profile-picture/' 
         : '/auth/upload-hover-profile-picture/';
 
-      console.log('📡 Uploading to:', endpoint);
-      console.log('📎 Target:', target);
-      console.log('👤 Current user ID:', currentUserId);
+      console.log('Uploading to:', endpoint);
+      console.log('Target:', target);
+      console.log('Current user ID:', currentUserId);
 
       const response = await api.patch(endpoint, formData, {
         headers: { 
@@ -444,27 +457,27 @@ const Envelope: React.FC = () => {
         },
       });
 
-      console.log('✅ Upload success:', response.data);
+      console.log('Upload success:', response.data);
 
-      // ✅ Refetch the correct profile based on target
+      // Refetch the correct profile based on target
       if (target === 'partner2') {
-        console.log('🔄 Refetching partner profile...');
+        console.log('Refetching partner profile...');
         await refetchPartnerProfile();
         queryClient.invalidateQueries({ queryKey: ['partnerProfile'] });
       } else {
-        console.log('🔄 Refetching user profile...');
+        console.log('Refetching user profile...');
         await refetchUserProfile();
         queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       }
       
-      // ✅ Also invalidate couple info to update partner status
+      // Also invalidate couple info to update partner status
       queryClient.invalidateQueries({ queryKey: ['coupleInfo'] });
       
       toast.success(isMain ? 'Photo updated! 📸' : 'Hover photo updated! ✨');
       setUploadModalOpen(false);
     } catch (error: any) {
-      console.error('❌ Upload error:', error);
-      console.error('❌ Error response:', error.response?.data);
+      console.error('Upload error:', error);
+      console.error('Error response:', error.response?.data);
       
       let errorMessage = 'Failed to upload';
       if (error.code === 'ERR_NETWORK') {
@@ -534,6 +547,79 @@ const Envelope: React.FC = () => {
     setIsAnimating(false);
     clearTimeouts();
   };
+
+  // Letter modal content using createPortal
+  const letterModalContent = showModal && currentLetter ? (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 999999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        background: 'rgba(159, 18, 57, 0.4)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      }}
+      onClick={handleClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 30, rotate: -2 }}
+        animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: "spring", damping: 22, stiffness: 150, delay: 0.1 }}
+        className="w-full max-w-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="paper-bg paper-edge rounded-sm shadow-2xl overflow-hidden relative">
+          <div className="gold-border" />
+
+          {/* Wax seal decoration */}
+          <div className="absolute top-6 right-6 z-20 md:top-8 md:right-8">
+            <motion.div initial={{ scale: 0, rotate: -40 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", delay: 0.4, damping: 12 }} className="h-12 w-12 rounded-full bg-linear-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg wax-seal border border-red-900/50">
+              <Heart className="h-5 w-5 fill-red-300/80 text-red-200" />
+            </motion.div>
+          </div>
+
+          <div className="p-8 md:p-12 min-h-62.5 flex flex-col relative z-10 max-h-[85vh] overflow-y-auto custom-scrollbar">
+            <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="letter-title text-2xl md:text-3xl text-amber-950 text-center mb-4 tracking-wide">
+              {currentLetter.title}
+            </motion.h1>
+
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-px bg-amber-900/20" />
+                <Sparkles className="w-4 h-4 text-amber-600/40" />
+                <div className="w-12 h-px bg-amber-900/20" />
+              </div>
+            </div>
+
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="flex-1">
+              <p className="letter-font text-base md:text-lg leading-loose text-amber-950/85 whitespace-pre-wrap text-justify">
+                {currentLetter.content}
+              </p>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }} className="mt-6 pt-4 text-right pr-2 border-t border-amber-900/10 shrink-0">
+              <p className="letter-font text-sm text-amber-900/60 mb-1 mr-6">Yours truly,</p>
+              <p className="signature-font text-[#9f1239] transform -rotate-3 text-2xl">With endless love</p>
+            </motion.div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Close button */}
+      <button 
+        onClick={handleClose} 
+        className="absolute top-4 right-4 md:top-8 md:right-8 rounded-full p-2.5 bg-white/60 backdrop-blur-sm hover:bg-white/90 text-rose-950 transition-all shadow-md cursor-pointer"
+        style={{ zIndex: 999999 }}
+      >
+        <X className="h-5 w-5" />
+      </button>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -843,82 +929,8 @@ const Envelope: React.FC = () => {
         </div>
       </div>
 
-      {/* Full-screen letter modal - with SUPER HIGH Z-INDEX */}
-      <AnimatePresence>
-        {showModal && currentLetter && (
-          <motion.div
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            transition={{ duration: 0.4 }}
-            className="fixed inset-0 flex items-center justify-center bg-rose-950/30 p-4 sm:p-6"
-            style={{ 
-              zIndex: 999999,  
-              position: 'fixed'
-            }}
-            onClick={handleClose}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 30, rotate: -2 }}
-              animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", damping: 22, stiffness: 150, delay: 0.1 }}
-              className="w-full max-w-2xl"
-              style={{ zIndex: 1000000 }}  
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="paper-bg paper-edge rounded-sm shadow-2xl overflow-hidden relative">
-                <div className="gold-border" />
-
-                {/* Wax seal decoration */}
-                <div className="absolute top-6 right-6 z-20 md:top-8 md:right-8">
-                  <motion.div initial={{ scale: 0, rotate: -40 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", delay: 0.4, damping: 12 }} className="h-12 w-12 rounded-full bg-linear-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg wax-seal border border-red-900/50">
-                    <Heart className="h-5 w-5 fill-red-300/80 text-red-200" />
-                  </motion.div>
-                </div>
-
-                <div className="p-8 md:p-12 min-h-62.5 flex flex-col relative z-10 max-h-[85vh]">
-                  <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="letter-title text-2xl md:text-3xl text-amber-950 text-center mb-4 tracking-wide">
-                    {currentLetter.title}
-                  </motion.h1>
-
-                  <div className="flex justify-center mb-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-12 h-px bg-amber-900/20" />
-                      <Sparkles className="w-4 h-4 text-amber-600/40" />
-                      <div className="w-12 h-px bg-amber-900/20" />
-                    </div>
-                  </div>
-
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.8 }} className="flex-1 max-h-[45vh] overflow-y-auto custom-scrollbar pr-3">
-                    <p className="letter-font text-base md:text-lg leading-loose text-amber-950/85 whitespace-pre-wrap text-justify">
-                      {currentLetter.content}
-                    </p>
-                  </motion.div>
-
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.6 }} className="mt-6 pt-4 text-right pr-2 border-t border-amber-900/10 shrink-0">
-                    <p className="letter-font text-sm text-amber-900/60 mb-1 mr-6">Yours truly,</p>
-                    <p className="signature-font text-[#9f1239] transform -rotate-3 text-2xl">With endless love</p>
-                  </motion.div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Close button - also with high z-index */}
-            <motion.button 
-              initial={{ opacity: 0, scale: 0.8 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              exit={{ opacity: 0, scale: 0.8 }} 
-              transition={{ delay: 0.5 }} 
-              onClick={handleClose} 
-              className="absolute top-4 right-4 md:top-8 md:right-8 rounded-full p-2.5 bg-white/60 backdrop-blur-sm hover:bg-white/90 text-rose-950 transition-all shadow-md cursor-pointer"
-              style={{ zIndex: 1000001 }}  
-            >
-              <X className="h-5 w-5" />
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Letter Modal using createPortal */}
+      {createPortal(letterModalContent, document.body)}
     </>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Power, Trash2, UploadCloud, Camera as CameraIcon, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Circle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -29,11 +30,10 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
     if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     }
-
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -93,18 +93,20 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
     onClose();
   };
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="fixed inset-0 flex items-center justify-center bg-black/80 p-4 select-none"
-          style={{ 
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
             zIndex: 999999,
-            position: 'fixed'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            background: 'rgba(0,0,0,0.8)',
+            backdropFilter: 'blur(8px)',
           }}
           onClick={handleClose}
         >
@@ -114,7 +116,6 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
             exit={{ scale: 0.85, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="relative flex w-full max-w-4xl aspect-[16/10] sm:aspect-[16/9] max-h-[90vh] bg-[#2a2b2e] rounded-[32px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8),inset_0_1px_2px_rgba(255,255,255,0.2)] border border-[#1a1a1c]"
-            style={{ zIndex: 1000000 }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Viewfinder Bump (Top Center) */}
@@ -148,7 +149,6 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
                     ${isDragging ? 'ring-2 ring-red-500' : ''}
                   `}
                 >
-                  {/* The Image */}
                   {preview ? (
                     <img 
                       src={preview} 
@@ -164,7 +164,6 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
                     </div>
                   )}
 
-                  {/* UI Overlay on Screen */}
                   {preview && (
                     <div className="absolute inset-0 pointer-events-none p-3 flex flex-col justify-between font-mono text-[10px] text-white drop-shadow-md">
                       <div className="flex justify-between">
@@ -192,25 +191,18 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
 
             {/* Right side: Physical Grip & Buttons */}
             <div className="w-32 sm:w-48 bg-[#1f1f21] rounded-r-[32px] shadow-[inset_10px_0_20px_rgba(0,0,0,0.5)] border-l border-[#111] p-4 flex flex-col items-center justify-between relative overflow-hidden shrink-0">
-              
-              {/* Fake leather texture pattern overlay */}
               <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '4px 4px' }}></div>
 
-              {/* Top: Power Button */}
               <div className="relative z-10 w-full flex justify-end">
                 <button 
                   onClick={handleClose}
                   className="w-8 h-8 rounded-full bg-[#111] border border-[#333] shadow-[0_2px_4px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)] flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-[#222] active:scale-95 transition-all"
-                  title="Power Off (Close)"
                 >
                   <Power className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Middle: D-Pad & Delete Button */}
               <div className="relative z-10 flex flex-col items-center gap-4 w-full">
-                
-                {/* Centered Delete Button */}
                 <div className="flex justify-center w-full px-2">
                   <button 
                     onClick={() => {
@@ -231,22 +223,17 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
                   </button>
                 </div>
 
-                {/* Circular D-Pad */}
                 <div className="w-24 h-24 rounded-full bg-[#1a1a1c] shadow-[0_4px_10px_rgba(0,0,0,0.8),inset_0_2px_5px_rgba(255,255,255,0.05)] border border-[#111] relative flex items-center justify-center mt-2">
-                  {/* Directional Arrows */}
                   <ChevronUp className="absolute top-1 w-4 h-4 text-zinc-600" />
                   <ChevronRight className="absolute right-1 w-4 h-4 text-zinc-600" />
                   <ChevronDown className="absolute bottom-1 w-4 h-4 text-zinc-600" />
                   <ChevronLeft className="absolute left-1 w-4 h-4 text-zinc-600" />
-                  
-                  {/* Center OK button */}
                   <div className="w-10 h-10 rounded-full bg-[#2a2a2d] border border-[#111] shadow-[0_2px_4px_rgba(0,0,0,0.5),inset_0_1px_2px_rgba(255,255,255,0.1)] flex items-center justify-center text-[10px] font-bold text-zinc-500">
                     OK
                   </div>
                 </div>
               </div>
 
-              {/* Bottom: Big Shutter/Upload Button */}
               <div className="relative z-10 w-full flex flex-col items-center gap-2">
                 <button
                   onClick={preview ? handleUpload : () => fileInputRef.current?.click()}
@@ -281,10 +268,12 @@ const UploadPhotoModal: React.FC<UploadPhotoModalProps> = ({
               className="hidden"
             />
           </motion.div>
-        </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default UploadPhotoModal;

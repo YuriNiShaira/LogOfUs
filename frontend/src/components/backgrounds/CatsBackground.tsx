@@ -111,7 +111,7 @@ const CatsBackground: React.FC = () => {
     {
       id: 'cat15',
       image: '/cat15.png',
-      left: 30.7,
+      left: 31.3,
       top: 41,
       size: 250,
       rotation: 2,
@@ -407,7 +407,7 @@ const CatsBackground: React.FC = () => {
         ))}
       </div>
 
-      {/* TOP LAYER - Cats 20-25 - BAWASAN ANG Z-INDEX */}
+      {/* TOP LAYER - Cats 20-25 */}
       <div
         style={{
           position: 'absolute',
@@ -417,7 +417,7 @@ const CatsBackground: React.FC = () => {
           bottom: 0,
           pointerEvents: 'none',
           overflow: 'hidden',
-          zIndex: 100, 
+          zIndex: 9999,
         }}
       >
         {topLayerCats.map((cat) => (
