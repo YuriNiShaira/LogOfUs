@@ -407,7 +407,7 @@ const CatsBackground: React.FC = () => {
         ))}
       </div>
 
-      {/* TOP LAYER - Cats 20-25 */}
+      {/* TOP LAYER - Cats 20-25 - BAWASAN ANG Z-INDEX */}
       <div
         style={{
           position: 'absolute',
@@ -417,7 +417,7 @@ const CatsBackground: React.FC = () => {
           bottom: 0,
           pointerEvents: 'none',
           overflow: 'hidden',
-          zIndex: 9999,
+          zIndex: 100, 
         }}
       >
         {topLayerCats.map((cat) => (
