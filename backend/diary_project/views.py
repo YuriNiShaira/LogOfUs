@@ -296,7 +296,10 @@ class AnimeRatingViewSet(CoupleFilteredViewSet):
 
         if year_id:
             try:
-                queryset = queryset.filter(year_id=int(year_id))
+                if year_id == 'all' or year_id == '0':
+                    queryset = queryset.filter(year__isnull=True)
+                else:
+                    queryset = queryset.filter(year_id=int(year_id))
             except (TypeError, ValueError):
                 pass
 
@@ -304,6 +307,22 @@ class AnimeRatingViewSet(CoupleFilteredViewSet):
             queryset = queryset.filter(media_type__iexact=media_type.strip())
 
         return queryset
+
+    def perform_create(self, serializer):
+        couple = get_couple(self.request)
+        year_id = self.request.data.get('year')
+        
+        if not couple:
+            raise drf_serializers.ValidationError({'detail': 'Unable to determine your couple.'})
+
+        year_obj = None
+        if year_id and year_id != '0' and year_id != 'all':
+            try:
+                year_obj = Year.objects.get(id=year_id, couple=couple)
+            except Year.DoesNotExist:
+                raise drf_serializers.ValidationError({'year': 'The selected year is not valid for your relationship.'})
+
+        serializer.save(couple=couple, year=year_obj)
 
 
 class AnimeCategoryViewSet(CoupleFilteredViewSet):
@@ -317,7 +336,10 @@ class AnimeCategoryViewSet(CoupleFilteredViewSet):
 
         if year_id:
             try:
-                queryset = queryset.filter(year_id=int(year_id))
+                if year_id == 'all' or year_id == '0':
+                    queryset = queryset.filter(year__isnull=True)
+                else:
+                    queryset = queryset.filter(year_id=int(year_id))
             except (TypeError, ValueError):
                 pass
 
@@ -325,6 +347,38 @@ class AnimeCategoryViewSet(CoupleFilteredViewSet):
             queryset = queryset.filter(media_type__iexact=media_type.strip())
 
         return queryset
+
+    def perform_create(self, serializer):
+        couple = get_couple(self.request)
+        year_id = self.request.data.get('year')
+        media_type = self.request.data.get('media_type', 'anime')
+
+        if not couple:
+            raise drf_serializers.ValidationError({'detail': 'Unable to determine your couple.'})
+
+        year_obj = None
+        if year_id and year_id != '0' and year_id != 'all':
+            try:
+                year_obj = Year.objects.get(id=year_id, couple=couple)
+            except Year.DoesNotExist:
+                raise drf_serializers.ValidationError({'year': 'The selected year is not valid for your relationship.'})
+
+
+        existing = AnimeCategory.objects.filter(couple=couple, name__iexact=serializer.validated_data.get('name'), media_type=media_type)
+        
+        if year_obj:
+            existing = existing.filter(year=year_obj)
+        else:
+            existing = existing.filter(year__isnull=True)
+            
+        if existing.exists():
+            raise drf_serializers.ValidationError({'name': f'A category with this name already exists.'})
+
+        serializer.save(
+            couple=couple,
+            year=year_obj,
+            media_type=media_type
+        )
 
 
 class YearFunFactsViewSet(CoupleFilteredViewSet):

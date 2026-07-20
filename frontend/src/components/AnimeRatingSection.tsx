@@ -37,7 +37,7 @@ interface AnimeRating {
 }
 
 interface AnimeRatingSectionProps {
-  yearId?: number;
+  yearId?: number | null;
   yearNumber?: number;
   isGlobal?: boolean;
 }
@@ -114,30 +114,38 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
 
   const mediaTypeParam = encodeURIComponent(mediaTypeFilter.trim());
 
+  const getYearParam = () => {
+    if (isGlobal) return 'all';
+    if (yearId) return yearId;
+    return 'all';
+  };
+
   // Build URL for categories - handle global mode
   const getCategoriesUrl = () => {
-    if (isGlobal) {
+    const yearParam = getYearParam();
+    if (yearParam === 'all') {
       return `/anime-categories/?year=all`;
     }
     return mediaTypeFilter === 'all'
-      ? `/anime-categories/?year=${yearId}`
-      : `/anime-categories/?year=${yearId}&media_type=${mediaTypeParam}`;
+      ? `/anime-categories/?year=${yearParam}`
+      : `/anime-categories/?year=${yearParam}&media_type=${mediaTypeParam}`;
   };
 
   // Build URL for anime ratings - handle global mode
   const getAnimeRatingsUrl = () => {
-    if (isGlobal) {
+    const yearParam = getYearParam();
+    if (yearParam === 'all') {
       return mediaTypeFilter === 'all' 
         ? '/anime-ratings/'
         : `/anime-ratings/?media_type=${mediaTypeParam}`;
     }
     return mediaTypeFilter === 'all' 
-      ? `/anime-ratings/?year=${yearId}`
-      : `/anime-ratings/?year=${yearId}&media_type=${mediaTypeParam}`;
+      ? `/anime-ratings/?year=${yearParam}`
+      : `/anime-ratings/?year=${yearParam}&media_type=${mediaTypeParam}`;
   };
 
   const { data: categories } = useQuery<AnimeCategory[]>({
-    queryKey: ['animeCategories', yearId || 'all', mediaTypeFilter, isGlobal],
+    queryKey: ['animeCategories', getYearParam(), mediaTypeFilter, isGlobal],
     queryFn: async () => {
       const url = getCategoriesUrl();
       const response = await api.get(url);
@@ -147,7 +155,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
   });
 
   const { data: animeList, isLoading } = useQuery<AnimeRating[]>({
-    queryKey: ['animeRatings', yearId || 'all', mediaTypeFilter, isGlobal],
+    queryKey: ['animeRatings', getYearParam(), mediaTypeFilter, isGlobal],
     queryFn: async () => {
       const url = getAnimeRatingsUrl();
       console.log('Fetching URL:', url);
@@ -167,7 +175,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
         media_type: mediaTypeFilter !== 'all' ? mediaTypeFilter : 'anime'
       };
       
-      // Only add year if not global
+      // ✅ For global mode, don't send year
       if (!isGlobal && yearId) {
         payload.year = yearId;
       }
@@ -177,12 +185,12 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
       return response.data;
     },
     onSuccess: () => { 
-      queryClient.invalidateQueries({ queryKey: ['animeCategories', yearId || 'all', mediaTypeFilter, isGlobal] }); 
-      toast.success('Category added! 🎯'); 
+      queryClient.invalidateQueries({ queryKey: ['animeCategories', getYearParam(), mediaTypeFilter, isGlobal] }); 
+      toast.success('Category added!'); 
       setCategoryName(''); 
     },
     onError: (error: any) => {
-      console.error('❌ Category error:', error.response?.data);
+      console.error('Category error:', error.response?.data);
       toast.error(error.response?.data?.error || 'Failed to add category');
     },
   });
@@ -190,7 +198,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: number) => { await api.delete(`/anime-categories/${id}/`); },
     onSuccess: () => { 
-      queryClient.invalidateQueries({ queryKey: ['animeCategories', yearId || 'all', mediaTypeFilter, isGlobal] }); 
+      queryClient.invalidateQueries({ queryKey: ['animeCategories', getYearParam(), mediaTypeFilter, isGlobal] }); 
       toast.success('Category removed'); 
     },
   });
@@ -198,7 +206,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       const payload: any = { ...data };
-      // Only add year if not global
+      // ✅ For global mode, don't send year
       if (!isGlobal && yearId) {
         payload.year = yearId;
       }
@@ -206,8 +214,8 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
       return response.data;
     },
     onSuccess: () => { 
-      queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId || 'all', mediaTypeFilter, isGlobal] }); 
-      toast.success('Added to journal! 📖'); 
+      queryClient.invalidateQueries({ queryKey: ['animeRatings', getYearParam(), mediaTypeFilter, isGlobal] }); 
+      toast.success('Added to journal!'); 
       setIsModalOpen(false); 
       resetForm(); 
     },
@@ -219,8 +227,8 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
       return response.data;
     },
     onSuccess: () => { 
-      queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId || 'all', mediaTypeFilter, isGlobal] }); 
-      toast.success('Updated beautifully! ✍️'); 
+      queryClient.invalidateQueries({ queryKey: ['animeRatings', getYearParam(), mediaTypeFilter, isGlobal] }); 
+      toast.success('Updated beautifully!'); 
       setIsModalOpen(false); 
       resetForm(); 
     },
@@ -229,7 +237,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => { await api.delete(`/anime-ratings/${id}/`); },
     onSuccess: () => { 
-      queryClient.invalidateQueries({ queryKey: ['animeRatings', yearId || 'all', mediaTypeFilter, isGlobal] }); 
+      queryClient.invalidateQueries({ queryKey: ['animeRatings', getYearParam(), mediaTypeFilter, isGlobal] }); 
       toast.success('Page torn out'); 
     },
   });
@@ -269,7 +277,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
     });
   };
 
-  // 📖 Diary Theme-aware styles
+  // Diary Theme-aware styles
   const textColor = theme === 'dark' ? 'text-[#e5e0d8]' : 'text-stone-800';
   const subTextColor = theme === 'dark' ? 'text-stone-400' : 'text-stone-500';
   
@@ -530,7 +538,7 @@ const AnimeRatingSection: React.FC<AnimeRatingSectionProps> = ({ yearId, yearNum
         </div>
       )}
 
-      {/* 📖 Add/Edit Entry Modal */}
+      {/* Add/Edit Entry Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}

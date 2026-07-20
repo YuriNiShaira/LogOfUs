@@ -85,7 +85,7 @@ class AnimeRating(models.Model):
     ]
 
     couple = models.ForeignKey(Couple, on_delete=models.CASCADE, related_name='anime_ratings')
-    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='anime_ratings')
+    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='anime_ratings',null=True,)
     title = models.CharField(max_length=200)
     media_type = models.CharField(max_length=20, choices=MEDIA_TYPE_CHOICES, default='anime')
     my_ratings = models.JSONField(default=dict, blank=True)
@@ -107,7 +107,8 @@ class AnimeRating(models.Model):
         ordering = ['-combined_overall', 'title']
 
     def __str__(self):
-        return f"[{self.get_media_type_display()}] {self.title} - {self.year.year}"
+        year_label = f"Year {self.year.year_number}" if self.year else "Global"
+        return f"[{self.get_media_type_display()}] {self.title} - {year_label}"
 
     def calculate_overall(self, ratings_dict):
         if not ratings_dict:
@@ -133,17 +134,30 @@ class AnimeRating(models.Model):
 
 class AnimeCategory(models.Model):
     couple = models.ForeignKey(Couple, on_delete=models.CASCADE, related_name='anime_categories')
-    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='anime_categories')
+    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='anime_categories', null=True, blank=True)
     name = models.CharField(max_length=50)
     order = models.IntegerField(default=0)
     media_type = models.CharField(max_length=20, choices=AnimeRating.MEDIA_TYPE_CHOICES, default='anime')
 
     class Meta:
         ordering = ['order', 'name']
-        unique_together = ['year', 'name', 'media_type']
+        unique_together = []
+        constraints = [
+            models.UniqueConstraint(
+                fields=['couple', 'year', 'name', 'media_type'],
+                name='unique_anime_category_per_year',
+                condition=models.Q(year__isnull=False)
+            ),
+            models.UniqueConstraint(
+                fields=['couple', 'name', 'media_type'],
+                name='unique_anime_category_global',
+                condition=models.Q(year__isnull=True)
+            ),
+        ]
 
     def __str__(self):
-        return f"[{self.get_media_type_display()}] {self.name} - {self.year.year}"
+        year_label = f"Year {self.year.year_number}" if self.year else "Global"
+        return f"[{self.get_media_type_display()}] {self.name} - {year_label}"
 
 
 class YearFunFacts(models.Model):
