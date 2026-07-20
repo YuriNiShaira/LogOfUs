@@ -51,7 +51,8 @@ class CoupleGameScoreSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoupleGameScore
         fields = '__all__'
-        read_only_fields = ['couple']  
+        read_only_fields = ['couple']
+        extra_kwargs = {'year': {'required': False, 'allow_null': True},}
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
     points = serializers.SerializerMethodField()

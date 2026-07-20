@@ -380,12 +380,35 @@ class CoupleGameScoreViewSet(CoupleFilteredViewSet):
         winner = request.data.get('winner')
         couple = get_couple(request)
 
-        score, created = CoupleGameScore.objects.get_or_create(
-            couple=couple,
-            year_id=year_id,
-            game_name=game_name,
-            defaults={'my_score': 0, 'shaira_score': 0}
-        )
+        if not couple:
+            return Response({'error': 'No couple found'}, status=400)
+
+        if not game_name:
+            return Response({'error': 'Game name is required'}, status=400)
+
+        if winner not in ['me', 'shaira']:
+            return Response({'error': 'Winner must be "me" or "shaira"'}, status=400)
+
+        year_obj = None
+        if year_id and year_id != '0' and year_id != 'null':
+            try:
+                year_obj = Year.objects.get(id=year_id, couple=couple)
+            except Year.DoesNotExist:
+                return Response({'error': 'The selected year is not valid for your relationship.'}, status=400)
+
+        try:
+            score, created = CoupleGameScore.objects.get_or_create(
+                couple=couple,
+                year=year_obj,
+                game_name=game_name,
+                defaults={'my_score': 0, 'shaira_score': 0}
+            )
+        except CoupleGameScore.MultipleObjectsReturned:
+            score = CoupleGameScore.objects.filter(
+                couple=couple,
+                year=year_obj,
+                game_name=game_name
+            ).first()
 
         score.add_win(winner)
         serializer = self.get_serializer(score)
@@ -394,7 +417,25 @@ class CoupleGameScoreViewSet(CoupleFilteredViewSet):
     @action(detail=False, methods=['get'])
     def leaderboard(self, request):
         year_id = request.query_params.get('year_id')
-        scores = self.get_queryset().filter(year_id=year_id)
+        couple = get_couple(request)
+
+        if not couple:
+            return Response({'error': 'No couple found'}, status=400)
+
+
+        if year_id and year_id != '0' and year_id != 'null':
+            scores = self.get_queryset().filter(year_id=year_id)
+        else:
+
+            scores = self.get_queryset().filter(year__isnull=True)
+
+        if not scores.exists():
+            return Response({
+                'my_total': 0,
+                'shaira_total': 0,
+                'leader': 'tie',
+                'games': []
+            })
 
         total_my_wins = sum(s.my_score for s in scores)
         total_shaira_wins = sum(s.shaira_score for s in scores)

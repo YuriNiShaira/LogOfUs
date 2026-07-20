@@ -61,21 +61,32 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
       const response = await api.get(url);
       return response.data;
     },
+    // ✅ Add this to ensure fresh data
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const recordWinMutation = useMutation({
     mutationFn: async ({ gameName, winner }: { gameName: string; winner: string }) => {
-      const response = await api.post('/game-scores/record_win/', {
+      const payload = {
         year_id: yearId || 0,
         game_name: gameName,
-        winner,
-      });
+        winner: winner,
+      };
+      console.log('📤 Recording win:', payload);
+      const response = await api.post('/game-scores/record_win/', payload);
       return response.data;
     },
-    onSuccess: (_, variables) => {
-      // Refetch the leaderboard to update scores
-      refetchLeaderboard();
-      queryClient.invalidateQueries({ queryKey: ['leaderboard', yearId || 'all'] });
+    onSuccess: (variables) => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['leaderboard', yearId || 'all'],
+        exact: true,
+      });
+      
+      setTimeout(() => {
+        refetchLeaderboard();
+      }, 100);
 
       if (variables.winner === 'me') {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -83,6 +94,10 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
       } else {
         toast.success(`${partnerName} won! 💕`, { icon: '👑' });
       }
+    },
+    onError: (error: any) => {
+      console.error('❌ Error recording win:', error);
+      toast.error('Failed to record win. Please try again.');
     },
   });
 
@@ -108,8 +123,13 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
       }
     },
     onSuccess: () => {
-      refetchLeaderboard();
-      queryClient.invalidateQueries({ queryKey: ['leaderboard', yearId || 'all'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['leaderboard', yearId || 'all'],
+        exact: true,
+      });
+      setTimeout(() => {
+        refetchLeaderboard();
+      }, 100);
       toast.success('Scoreboard erased! 🔄');
       setResetTarget(null);
     },
@@ -333,7 +353,6 @@ const TicTacToeGame: React.FC<TicTacToeProps> = ({ onBack, onWin, currentScore, 
     if (gameWinner && !hasRecordedWin) {
       setWinner(gameWinner);
       setHasRecordedWin(true);
-      // Record the win
       const winnerName = gameWinner === '❤️' ? 'me' : 'shaira';
       onWin(winnerName);
     } else if (!newBoard.includes(null) && !gameWinner) {

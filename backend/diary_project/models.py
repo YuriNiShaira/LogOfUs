@@ -178,7 +178,7 @@ class YearFunFacts(models.Model):
 
 class CoupleGameScore(models.Model):
     couple = models.ForeignKey(Couple, on_delete=models.CASCADE, related_name='game_scores')
-    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='game_scores')
+    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='game_scores',null=True, blank=True)
     game_name = models.CharField(max_length=60)
     my_score = models.IntegerField(default=0)
     shaira_score = models.IntegerField(default=0)
@@ -186,10 +186,23 @@ class CoupleGameScore(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['year', 'game_name']
+        unique_together = []  
+        constraints = [
+            models.UniqueConstraint(
+                fields=['couple', 'year', 'game_name'],
+                name='unique_game_score_per_year',
+                condition=models.Q(year__isnull=False)
+            ),
+            models.UniqueConstraint(
+                fields=['couple', 'game_name'],
+                name='unique_game_score_global',
+                condition=models.Q(year__isnull=True)
+            ),
+        ]
 
     def __str__(self):
-        return f"{self.game_name} - {self.year.year}"
+        year_label = f"Year {self.year.year_number}" if self.year else "Global"
+        return f"{self.game_name} - {year_label}"
 
     def add_win(self, winner: str):
         if winner == 'me':
