@@ -216,33 +216,6 @@ class LoveLetterViewSet(CoupleFilteredViewSet):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
 
-        if not queryset.exists():
-            couple = get_couple(request)
-            display_name = request.user.profile.display_name
-            
-            anniversary_date = "our special day"
-            if couple and couple.anniversary_date:
-                anniversary_date = couple.anniversary_date.strftime('%B %d, %Y')
-            
-            LoveLetter.objects.create(
-                couple=couple,
-                title=f"My Dearest {display_name}",
-                content=f"""My love,
-
-Every day with you feels like a beautiful dream come true. From the moment we met, my life has been filled with more joy, laughter, and love than I ever thought possible.
-
-You are my sunshine on cloudy days, my comfort in difficult times, and my favorite person to share every moment with. Your smile lights up my world, and your love makes me a better person.
-
-This diary is my gift to you - a collection of our beautiful memories together. Every photo, every story, every little moment captured here is a testament to our love story.
-
-I can't wait to create many more memories with you, my love. Here's to our past, our present, and our beautiful future together.
-
-Forever yours,
-Your Love""",
-                is_active=True
-            )
-            queryset = LoveLetter.objects.filter(couple=couple)
-        
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
