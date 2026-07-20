@@ -782,7 +782,7 @@ const SettingsDropdown: React.FC = () => {
                       <div>
                         <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
                           <Flower2 className="inline w-4 h-4 mr-2 text-rose-400" />
-                          Falling Petals
+                          Reduce bg animation 
                         </p>
                         <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                           Drifting romantic memories
