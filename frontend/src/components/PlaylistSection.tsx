@@ -31,8 +31,7 @@ interface PlaylistStats {
   listened_count: number;
   my_recommendations: number;
   shaira_recommendations: number;
-  for_me: number;
-  for_shaira: number;
+  average_rating: number;
 }
 
 interface PlaylistSectionProps {
@@ -54,7 +53,9 @@ const WashiTape = ({ rotate = '-rotate-2', color = 'bg-white/50' }) => (
 const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber }) => {
   const { user } = useAuth();
   const { theme } = useTheme();
-  const displayName = user?.display_name || 'You';
+  
+  // ✅ Get the current user's display name
+  const myName = user?.display_name || 'You';
   const partnerName = user?.partner_name || 'Partner';
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,9 +74,9 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
 
   const queryClient = useQueryClient();
 
-  // Query for songs - FIXED: Don't include filterListened in queryKey to avoid issues
-  const { data: songs, isLoading, } = useQuery<SongRecommendation[]>({
-    queryKey: ['songRecommendations', yearId || 'all'],
+  // Query for songs
+  const { data: songs } = useQuery<SongRecommendation[]>({
+    queryKey: ['songRecommendations', yearId || 'all', filterListened],
     queryFn: async () => {
       try {
         const params = new URLSearchParams();
@@ -87,13 +88,11 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
         }
         
         const url = `/song-recommendations/${params.toString() ? '?' + params.toString() : ''}`;
-        console.log('📡 Fetching songs from:', url);
-        
         const response = await api.get(url);
         const data = response.data;
         return Array.isArray(data) ? data : data.results || [];
       } catch (error: any) {
-        console.error('❌ Error fetching songs:', error);
+        console.error('Error fetching songs:', error);
         return [];
       }
     },
@@ -101,8 +100,8 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
     staleTime: 30000,
   });
 
-  // Query for stats - FIXED: Better error handling
-  const { data: stats, isLoading: statsLoading } = useQuery<PlaylistStats>({
+
+  const { data: stats } = useQuery<PlaylistStats>({
     queryKey: ['playlistStats', yearId || 'all'],
     queryFn: async () => {
       try {
@@ -111,22 +110,23 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
           params.append('year_id', String(yearId));
         }
         const url = `/song-recommendations/stats/${params.toString() ? '?' + params.toString() : ''}`;
-        console.log('📡 Fetching stats from:', url);
-        
         const response = await api.get(url);
-        console.log('✅ Stats response:', response.data);
-        return response.data;
+        
+        return {
+          total_songs: response.data.total_songs || 0,
+          listened_count: response.data.listened_count || 0,
+          my_recommendations: response.data.my_recommendations || 0,
+          shaira_recommendations: response.data.shaira_recommendations || 0,
+          average_rating: response.data.average_rating || 0,
+        };
       } catch (error: any) {
-        console.error('❌ Error fetching stats:', error);
-        console.error('❌ Error response:', error.response?.data);
-        // Return default stats
+        console.error('Error fetching stats:', error);
         return {
           total_songs: 0,
           listened_count: 0,
           my_recommendations: 0,
           shaira_recommendations: 0,
-          for_me: 0,
-          for_shaira: 0,
+          average_rating: 0,
         };
       }
     },
@@ -134,7 +134,7 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
     staleTime: 30000,
   });
 
-  // Create mutation - FIXED: Send correct fields
+  // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       const payload: any = {
@@ -147,12 +147,10 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
         mood: data.mood,
       };
       
-      // Only add year if it exists and is valid
       if (yearId) {
         payload.year = yearId;
       }
       
-      console.log('📤 Sending create payload:', payload);
       const response = await api.post('/song-recommendations/', payload);
       return response.data;
     },
@@ -164,16 +162,8 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
       resetForm();
     },
     onError: (error: any) => {
-      console.error('❌ Create error:', error.response?.data);
-      const errorData = error.response?.data;
-      if (errorData && typeof errorData === 'object') {
-        const messages = Object.entries(errorData)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join('\n');
-        toast.error(`Failed to add song:\n${messages}`);
-      } else {
-        toast.error('Failed to add song.');
-      }
+      console.error('Create error:', error.response?.data);
+      toast.error(error.response?.data?.error || 'Failed to add song.');
     },
   });
 
@@ -195,7 +185,6 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
       
       payload.rating = (data.rating >= 1 && data.rating <= 5) ? data.rating : null;
       
-      console.log('📤 Sending update payload:', payload);
       const response = await api.put(`/song-recommendations/${id}/`, payload);
       return response.data;
     },
@@ -207,11 +196,12 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
       resetForm();
     },
     onError: (error: any) => {
-      console.error('❌ Update error:', error.response?.data);
+      console.error('Update error:', error.response?.data);
       toast.error(error.response?.data?.error || 'Failed to update song.');
     },
   });
 
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => { 
       await api.delete(`/song-recommendations/${id}/`); 
@@ -223,6 +213,7 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
     },
   });
 
+  // Toggle listened mutation
   const toggleListenedMutation = useMutation({
     mutationFn: async ({ id, is_listened }: { id: number; is_listened: boolean }) => {
       const response = await api.patch(`/song-recommendations/${id}/`, { 
@@ -264,20 +255,6 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
 
   const isDark = theme === 'dark';
 
-  // Show loading state
-  if (isLoading || statsLoading) {
-    return (
-      <div className={`space-y-10 max-w-6xl mx-auto p-4 sm:p-8 rounded-3xl min-h-screen transition-colors duration-300 ${
-        isDark ? 'bg-slate-900/40' : 'bg-amber-50/30'
-      }`}>
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className={`mt-4 font-serif italic ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Loading our mixtape...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Get the actual songs array
   const songList = Array.isArray(songs) ? songs : [];
 
@@ -310,12 +287,13 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
         </motion.button>
       </header>
 
+      {/*  Stats Display  */}
       {stats && (
         <div className="flex flex-wrap justify-center md:justify-start gap-4">
           {[
             { label: 'Total Tracks', value: stats.total_songs || 0, rotate: '-rotate-2', bg: isDark ? 'bg-slate-800' : 'bg-blue-50' },
             { label: 'Listened To', value: stats.listened_count || 0, rotate: 'rotate-1', bg: isDark ? 'bg-slate-800' : 'bg-emerald-50' },
-            { label: `By ${displayName}`, value: stats.my_recommendations || 0, rotate: '-rotate-1', bg: isDark ? 'bg-slate-800' : 'bg-pink-50' },
+            { label: `By ${myName}`, value: stats.my_recommendations || 0, rotate: '-rotate-1', bg: isDark ? 'bg-slate-800' : 'bg-pink-50' },
             { label: `By ${partnerName}`, value: stats.shaira_recommendations || 0, rotate: 'rotate-2', bg: isDark ? 'bg-slate-800' : 'bg-amber-50' },
           ].map((stat, i) => (
             <motion.div 
@@ -506,11 +484,7 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
 
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  if (editingSong) {
-                    updateMutation.mutate({ id: editingSong.id, data: formData });
-                  } else {
-                    createMutation.mutate(formData);
-                  }
+                  editingSong ? updateMutation.mutate({ id: editingSong.id, data: formData }) : createMutation.mutate(formData);
                 }} className="space-y-6 mt-[-10px]">
                   
                   <div className="space-y-4">
