@@ -3,10 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Music, Plus, Edit, Trash2, X, CheckCircle,
-  Star, Play, Disc
+  Star, Play, Disc, Loader2
 } from 'lucide-react';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
 
@@ -46,17 +45,27 @@ const MOOD_CHOICES = [
   { value: 'other', label: 'Other' },
 ];
 
-const WashiTape = ({ rotate = '-rotate-2', color = 'bg-white/50' }) => (
-  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-6 ${color} backdrop-blur-md shadow-sm border border-black/5 ${rotate} z-10`} />
+// Naka-fix sa puti/off-white ang tape para malinis
+const WashiTape = ({ rotate = '-rotate-2' }) => (
+  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 bg-white/90 backdrop-blur-md shadow-sm border border-black/10 ${rotate} z-10`} />
 );
 
+// Vibrant card colors based on mood
+const getMoodColors = (mood: string, isDark: boolean) => {
+  switch (mood) {
+    case 'romantic':
+      return isDark ? 'bg-rose-900/40 border-rose-700' : 'bg-rose-100 border-rose-300';
+    case 'sad':
+      return isDark ? 'bg-blue-900/40 border-blue-700' : 'bg-blue-100 border-blue-300';
+    case 'chill':
+      return isDark ? 'bg-emerald-900/40 border-emerald-700' : 'bg-emerald-100 border-emerald-300';
+    default: // 'other'
+      return isDark ? 'bg-amber-900/40 border-amber-700' : 'bg-amber-100 border-amber-300';
+  }
+};
+
 const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber }) => {
-  const { user } = useAuth();
   const { theme } = useTheme();
-  
-  // ✅ Get the current user's display name
-  const myName = user?.display_name || 'You';
-  const partnerName = user?.partner_name || 'Partner';
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSong, setEditingSong] = useState<SongRecommendation | null>(null);
@@ -73,19 +82,16 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
   });
 
   const queryClient = useQueryClient();
+  const isDark = theme === 'dark';
 
   // Query for songs
-  const { data: songs } = useQuery<SongRecommendation[]>({
+  const { data: songs, isLoading: isLoadingSongs } = useQuery<SongRecommendation[]>({
     queryKey: ['songRecommendations', yearId || 'all', filterListened],
     queryFn: async () => {
       try {
         const params = new URLSearchParams();
-        if (yearId) {
-          params.append('year', String(yearId));
-        }
-        if (filterListened !== 'all') {
-          params.append('is_listened', String(filterListened === 'listened'));
-        }
+        if (yearId) params.append('year', String(yearId));
+        if (filterListened !== 'all') params.append('is_listened', String(filterListened === 'listened'));
         
         const url = `/song-recommendations/${params.toString() ? '?' + params.toString() : ''}`;
         const response = await api.get(url);
@@ -100,18 +106,15 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
     staleTime: 30000,
   });
 
-
+  // Query for stats
   const { data: stats } = useQuery<PlaylistStats>({
     queryKey: ['playlistStats', yearId || 'all'],
     queryFn: async () => {
       try {
         const params = new URLSearchParams();
-        if (yearId) {
-          params.append('year_id', String(yearId));
-        }
+        if (yearId) params.append('year_id', String(yearId));
         const url = `/song-recommendations/stats/${params.toString() ? '?' + params.toString() : ''}`;
         const response = await api.get(url);
-        
         return {
           total_songs: response.data.total_songs || 0,
           listened_count: response.data.listened_count || 0,
@@ -120,92 +123,49 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
           average_rating: response.data.average_rating || 0,
         };
       } catch (error: any) {
-        console.error('Error fetching stats:', error);
-        return {
-          total_songs: 0,
-          listened_count: 0,
-          my_recommendations: 0,
-          shaira_recommendations: 0,
-          average_rating: 0,
-        };
+        return { total_songs: 0, listened_count: 0, my_recommendations: 0, shaira_recommendations: 0, average_rating: 0 };
       }
     },
     retry: 1,
     staleTime: 30000,
   });
 
-  // Create mutation
+  // Mutations
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const payload: any = {
-        title: data.title,
-        artist: data.artist,
-        youtube_link: data.youtube_link || '',
-        spotify_link: data.spotify_link || '',
-        is_listened: false,
-        rating: data.rating || null,
-        mood: data.mood,
-      };
-      
-      if (yearId) {
-        payload.year = yearId;
-      }
-      
+      const payload: any = { ...data, is_listened: false };
+      if (yearId) payload.year = yearId;
       const response = await api.post('/song-recommendations/', payload);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['songRecommendations'] });
       queryClient.invalidateQueries({ queryKey: ['playlistStats'] });
-      toast.success('Song added to our mixtape');
-      setIsModalOpen(false);
-      resetForm();
+      toast.success('Song added to our mixtape 🎵');
+      closeModal();
     },
-    onError: (error: any) => {
-      console.error('Create error:', error.response?.data);
-      toast.error(error.response?.data?.error || 'Failed to add song.');
-    },
+    onError: (error: any) => toast.error(error.response?.data?.error || 'Failed to add song.'),
   });
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const payload: any = {
-        title: data.title,
-        artist: data.artist,
-        youtube_link: data.youtube_link || '',
-        spotify_link: data.spotify_link || '',
-        is_listened: data.is_listened,
-        mood: data.mood,
-      };
-      
-      if (yearId) {
-        payload.year = yearId;
-      }
-      
+      const payload: any = { ...data };
+      if (yearId) payload.year = yearId;
       payload.rating = (data.rating >= 1 && data.rating <= 5) ? data.rating : null;
-      
       const response = await api.put(`/song-recommendations/${id}/`, payload);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['songRecommendations'] });
       queryClient.invalidateQueries({ queryKey: ['playlistStats'] });
-      toast.success('Song updated');
-      setIsModalOpen(false);
-      resetForm();
+      toast.success('Song updated ✨');
+      closeModal();
     },
-    onError: (error: any) => {
-      console.error('Update error:', error.response?.data);
-      toast.error(error.response?.data?.error || 'Failed to update song.');
-    },
+    onError: (error: any) => toast.error(error.response?.data?.error || 'Failed to update song.'),
   });
 
-  // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: number) => { 
-      await api.delete(`/song-recommendations/${id}/`); 
-    },
+    mutationFn: async (id: number) => { await api.delete(`/song-recommendations/${id}/`); },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['songRecommendations'] });
       queryClient.invalidateQueries({ queryKey: ['playlistStats'] });
@@ -213,7 +173,6 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
     },
   });
 
-  // Toggle listened mutation
   const toggleListenedMutation = useMutation({
     mutationFn: async ({ id, is_listened }: { id: number; is_listened: boolean }) => {
       const response = await api.patch(`/song-recommendations/${id}/`, { 
@@ -225,7 +184,7 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['songRecommendations'] });
       queryClient.invalidateQueries({ queryKey: ['playlistStats'] });
-      toast.success(variables.is_listened ? 'Marked as listened' : 'Marked as unlistened');
+      toast.success(variables.is_listened ? 'Marked as listened 🎧' : 'Marked as unlistened');
     },
   });
 
@@ -239,75 +198,57 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
     setIsModalOpen(true);
   };
 
-  const resetForm = () => {
-    setEditingSong(null);
-    setFormData({
-      title: '', artist: '',
-      youtube_link: '', spotify_link: '',
-      is_listened: false, rating: 0, mood: 'other',
-    });
-  };
-
   const closeModal = () => {
     setIsModalOpen(false);
-    resetForm();
+    setEditingSong(null);
+    setFormData({ title: '', artist: '', youtube_link: '', spotify_link: '', is_listened: false, rating: 0, mood: 'other' });
   };
 
-  const isDark = theme === 'dark';
-
-  // Get the actual songs array
   const songList = Array.isArray(songs) ? songs : [];
 
   return (
     <div className={`space-y-10 max-w-6xl mx-auto p-4 sm:p-8 rounded-3xl min-h-screen transition-colors duration-300 ${
-      isDark ? 'bg-slate-900/40' : 'bg-amber-50/30'
+      isDark ? 'bg-slate-900/40 text-slate-100' : 'bg-amber-50/40 text-gray-800'
     }`}>
-      <header className={`flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-2 border-dashed pb-6 ${
+      
+      {/* HEADER */}
+      <header className={`flex flex-col md:flex-row md:items-center justify-between gap-6 border-b-2 border-dashed pb-6 ${
         isDark ? 'border-slate-700' : 'border-gray-300'
       }`}>
         <div>
-          <h2 className={`text-4xl font-serif tracking-tight ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>
+          <h2 className="text-4xl font-serif tracking-tight font-bold">
             Our Mixtape {yearNumber ? `Vol. ${yearNumber}` : ''}
           </h2>
-          <p className={`mt-2 font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <p className={`mt-1 font-medium text-lg ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             The songs that scored our favorite moments
           </p>
         </div>
         <motion.button
-          whileHover={{ scale: 1.05, rotate: 2 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className={`px-6 py-2 rounded-lg shadow-sm hover:shadow-md transition-all font-medium flex items-center gap-2 border-2 ${
-            isDark 
-              ? 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700' 
-              : 'bg-white border-gray-200 text-gray-700'
+          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+          onClick={() => setIsModalOpen(true)}
+          className={`px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md transition-all font-semibold flex items-center gap-2 ${
+            isDark ? 'bg-pink-600 text-white hover:bg-pink-500' : 'bg-pink-500 text-white hover:bg-pink-600'
           }`}
         >
-          <Plus className="w-4 h-4" /> add a song
+          <Plus className="w-5 h-5" /> Add a Song
         </motion.button>
       </header>
 
-      {/*  Stats Display  */}
+      {/* STATS */}
       {stats && (
-        <div className="flex flex-wrap justify-center md:justify-start gap-4">
+        <div className="flex flex-wrap gap-4">
           {[
-            { label: 'Total Tracks', value: stats.total_songs || 0, rotate: '-rotate-2', bg: isDark ? 'bg-slate-800' : 'bg-blue-50' },
-            { label: 'Listened To', value: stats.listened_count || 0, rotate: 'rotate-1', bg: isDark ? 'bg-slate-800' : 'bg-emerald-50' },
-            { label: `By ${myName}`, value: stats.my_recommendations || 0, rotate: '-rotate-1', bg: isDark ? 'bg-slate-800' : 'bg-pink-50' },
-            { label: `By ${partnerName}`, value: stats.shaira_recommendations || 0, rotate: 'rotate-2', bg: isDark ? 'bg-slate-800' : 'bg-amber-50' },
+            { label: 'Total Tracks', value: stats.total_songs || 0, bg: isDark ? 'bg-slate-800' : 'bg-white' },
+            { label: 'Listened To', value: stats.listened_count || 0, bg: isDark ? 'bg-slate-800' : 'bg-white' },
           ].map((stat, i) => (
             <motion.div 
-              key={i} 
-              whileHover={{ scale: 1.05, zIndex: 10 }}
-              className={`relative ${stat.bg} ${stat.rotate} p-4 rounded-sm shadow-md min-w-35 text-center flex-1 sm:flex-none border ${
-                isDark ? 'border-slate-700' : 'border-black/5'
+              key={i} whileHover={{ y: -5 }}
+              className={`relative ${stat.bg} p-6 rounded-2xl shadow-sm border flex-1 min-w-[140px] text-center ${
+                isDark ? 'border-slate-700' : 'border-gray-100'
               }`}
             >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 w-4 h-4 rounded-full bg-red-400/80 shadow-inner border border-red-500" />
-              <p className={`text-3xl font-handwriting mt-2 ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>
-                {stat.value}
-              </p>
-              <p className={`text-xs font-bold uppercase tracking-wider mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              <p className="text-4xl font-handwriting mb-1">{stat.value}</p>
+              <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>
                 {stat.label}
               </p>
             </motion.div>
@@ -315,240 +256,229 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
         </div>
       )}
 
-      <div className={`flex flex-wrap items-center gap-6 pt-4 border-t border-dashed ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-        <div className="flex items-center gap-3">
-          <span className={`font-handwriting text-2xl ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Status:</span>
-          <select
-            value={filterListened}
-            onChange={(e) => setFilterListened(e.target.value as any)}
-            className={`bg-transparent font-handwriting text-2xl border-b-2 focus:outline-none cursor-pointer pb-1 ${
-              isDark ? 'text-blue-400 border-blue-500/50' : 'text-blue-600 border-blue-300'
-            }`}
-          >
-            <option value="all" className={isDark ? 'bg-slate-800 text-slate-100' : ''}>All Tracks</option>
-            <option value="listened" className={isDark ? 'bg-slate-800 text-slate-100' : ''}>Heard It</option>
-            <option value="unlistened" className={isDark ? 'bg-slate-800 text-slate-100' : ''}>New to Me</option>
-          </select>
+      {/* FILTERS */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2">
+        <span className="font-handwriting text-2xl opacity-80">Filter:</span>
+        <div className={`flex p-1 rounded-xl gap-1 ${isDark ? 'bg-slate-800' : 'bg-white/60'} border ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+          {[
+            { id: 'all', label: 'All Tracks' },
+            { id: 'listened', label: 'Heard It' },
+            { id: 'unlistened', label: 'New to Me' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilterListened(tab.id as any)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                filterListened === tab.id 
+                  ? (isDark ? 'bg-slate-600 text-white shadow' : 'bg-white shadow text-gray-800')
+                  : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-800')
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {songList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 opacity-60">
-          <Disc className={`w-12 h-12 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
-          <h4 className={`text-3xl font-handwriting ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>The mixtape is empty</h4>
-          <p className={`font-medium ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>add a song that reminds you of us.</p>
+      {/* LOADING & EMPTY STATES */}
+      {isLoadingSongs ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className={`w-10 h-10 animate-spin ${isDark ? 'text-pink-500' : 'text-pink-400'}`} />
         </div>
+      ) : songList.length === 0 ? (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-24 text-center space-y-4 opacity-60">
+          <Disc className="w-16 h-16 mb-2" />
+          <h4 className="text-3xl font-handwriting">The mixtape is empty</h4>
+          <p className="font-medium text-lg">Add a song that reminds you of us.</p>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pt-4">
-          {songList.map((song, idx) => (
-            <motion.div
-              key={song.id} 
-              layout
-              initial={{ opacity: 0, scale: 0.9, rotate: (idx % 2 === 0 ? -1 : 1) }} 
-              animate={{ opacity: 1, scale: 1, rotate: (idx % 3 === 0 ? -1 : idx % 2 === 0 ? 1 : 0) }}
-              whileHover={{ scale: 1.02, rotate: 0, zIndex: 10 }}
-              className={`group relative p-5 pt-8 rounded-sm shadow-[2px_4px_12px_rgba(0,0,0,0.08)] border flex flex-col transition-all duration-300 ${
-                isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-100'
-              } ${song.is_listened ? 'opacity-80 grayscale-20' : ''}`}
-            >
-              <WashiTape 
-                rotate={idx % 2 === 0 ? 'rotate-2' : '-rotate-2'} 
-                color={isDark ? 'bg-slate-700/80 border-slate-600' : 'bg-red-100/50'} 
-              />
-              
-              <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                <button 
-                  onClick={() => handleEdit(song)} 
-                  className={`p-1.5 rounded transition-colors ${isDark ? 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/50' : 'bg-blue-50 text-blue-500 hover:bg-blue-100'}`}
+        /* TRACK LIST */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AnimatePresence>
+            {songList.map((song, idx) => {
+              const cardClass = getMoodColors(song.mood, isDark);
+
+              return (
+                <motion.div
+                  key={song.id} layout
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+                  className={`group relative p-6 pt-8 rounded-xl shadow-sm border transition-all hover:shadow-md flex flex-col ${
+                    cardClass
+                  } ${song.is_listened ? 'opacity-70 grayscale-[30%]' : ''}`}
                 >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={() => deleteMutation.mutate(song.id)} 
-                  className={`p-1.5 rounded transition-colors ${isDark ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' : 'bg-red-50 text-red-500 hover:bg-red-100'}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+                  {/* Lahat Tape na lang, pero alternating ang rotation */}
+                  <WashiTape rotate={idx % 2 === 0 ? 'rotate-2' : '-rotate-3'} />
+                  
+                  {/* ACTION BUTTONS */}
+                  <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                    <button onClick={() => handleEdit(song)} className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-700/80 hover:bg-blue-900/80 text-blue-400' : 'bg-white/80 hover:bg-blue-50 text-blue-600'}`}>
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => deleteMutation.mutate(song.id)} className={`p-2 rounded-full transition-colors ${isDark ? 'bg-slate-700/80 hover:bg-red-900/80 text-red-400' : 'bg-white/80 hover:bg-red-50 text-red-600'}`}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
 
-              <div className={`flex-1 border-b-2 pb-2 mb-3 ${isDark ? 'border-rose-900/50' : 'border-red-200'}`}>
-                <h3 className={`font-handwriting text-3xl leading-none truncate ${
-                  isDark ? 'text-slate-100' : 'text-gray-800'
-                } ${song.is_listened ? 'line-through decoration-gray-400' : ''}`}>
-                  {song.title}
-                </h3>
-                <p className={`font-handwriting text-2xl truncate mt-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                  by {song.artist}
-                </p>
-              </div>
+                  <div className="flex-1 mb-4">
+                    <h3 className={`font-handwriting text-3xl leading-tight line-clamp-2 ${song.is_listened ? 'line-through decoration-gray-400/50' : ''}`}>
+                      {song.title}
+                    </h3>
+                    <p className={`font-handwriting text-2xl mt-1 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                      by {song.artist}
+                    </p>
+                  </div>
 
-              <div className="flex flex-col gap-3 justify-between">
-                <div className="flex items-center justify-between">
-                  <span className={`font-handwriting text-xl ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
-                    Added by: <span className={isDark ? 'text-pink-400' : 'text-pink-600'}>
-                      {song.creator_display || 'Unknown'}
-                    </span>
-                  </span>
-                  {song.mood && (
-                    <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 border rounded-sm transform -rotate-2 ${
-                      isDark 
-                        ? 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50' 
-                        : 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                    }`}>
-                      {song.mood_display || song.mood}
-                    </span>
-                  )}
-                </div>
+                  <div className="flex flex-col gap-4 mt-auto">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+                        Added by <span className={isDark ? 'text-pink-400' : 'text-pink-600'}>{song.creator_display || 'Unknown'}</span>
+                      </span>
+                      {song.mood && (
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${
+                          isDark ? 'bg-black/20 text-slate-200' : 'bg-white/60 text-gray-700'
+                        }`}>
+                          {song.mood_display || song.mood}
+                        </span>
+                      )}
+                    </div>
 
-                <div className="flex items-center justify-between mt-2">
-                  <button
-                    onClick={() => toggleListenedMutation.mutate({ id: song.id, is_listened: !song.is_listened })}
-                    className={`flex items-center gap-2 font-handwriting text-xl transition-colors ${
-                      song.is_listened 
-                        ? (isDark ? 'text-emerald-400' : 'text-emerald-600') 
-                        : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600')
-                    }`}
-                  >
-                    {song.is_listened ? <CheckCircle className="w-5 h-5" /> : <div className={`w-5 h-5 rounded-full border-2 border-dashed ${isDark ? 'border-slate-500' : 'border-gray-400'}`} />}
-                    {song.is_listened ? 'We heard this' : 'Listen?'}
-                  </button>
-
-                  <div className="flex gap-2">
-                    {song.youtube_link && (
-                      <a href={song.youtube_link} target="_blank" rel="noopener noreferrer"
-                        className={`transition-colors ${isDark ? 'text-slate-500 hover:text-red-400' : 'text-gray-400 hover:text-red-500'}`} title="YouTube"
+                    <div className={`flex items-center justify-between pt-4 border-t ${isDark ? 'border-slate-700/50' : 'border-gray-400/30'}`}>
+                      <button
+                        onClick={() => toggleListenedMutation.mutate({ id: song.id, is_listened: !song.is_listened })}
+                        className={`flex items-center gap-2 text-sm font-bold uppercase tracking-wider transition-colors ${
+                          song.is_listened 
+                            ? (isDark ? 'text-emerald-400' : 'text-emerald-700') 
+                            : (isDark ? 'text-slate-300 hover:text-white' : 'text-gray-600 hover:text-gray-900')
+                        }`}
                       >
-                        <Play className="w-5 h-5 fill-current" />
-                      </a>
-                    )}
-                    {song.spotify_link && (
-                      <a href={song.spotify_link} target="_blank" rel="noopener noreferrer"
-                        className={`transition-colors ${isDark ? 'text-slate-500 hover:text-emerald-400' : 'text-gray-400 hover:text-emerald-500'}`} title="Spotify"
-                      >
-                        <Music className="w-5 h-5" />
-                      </a>
+                        {song.is_listened ? <CheckCircle className="w-5 h-5" /> : <div className="w-5 h-5 rounded-full border-2 border-dashed border-current opacity-50" />}
+                        {song.is_listened ? 'Listened' : 'Mark Listened'}
+                      </button>
+
+                      <div className="flex gap-3">
+                        {song.youtube_link && (
+                          <a href={song.youtube_link} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform text-[#FF0000]" title="YouTube">
+                            <Play className="w-5 h-5 fill-current" />
+                          </a>
+                        )}
+                        {song.spotify_link && (
+                          <a href={song.spotify_link} target="_blank" rel="noopener noreferrer" className="hover:scale-110 transition-transform text-[#1DB954]" title="Spotify">
+                            <Music className="w-5 h-5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {song.rating > 0 && (
+                      <div className="flex gap-1 justify-center mt-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`w-4 h-4 ${i < song.rating ? 'text-amber-400 fill-current' : (isDark ? 'text-slate-700' : 'text-gray-300')}`} />
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
-
-                {song.rating > 0 && (
-                  <div className={`flex gap-1 justify-center mt-2 py-1.5 rounded-sm border border-dashed ${
-                    isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-4 h-4 ${
-                        i < song.rating 
-                          ? 'text-yellow-400 fill-current' 
-                          : (isDark ? 'text-slate-600' : 'text-gray-300')
-                      }`} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
 
+      {/* MODAL */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={closeModal}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
             />
             <motion.div
-              initial={{ scale: 0.9, y: 20, opacity: 0, rotate: -2 }} 
-              animate={{ scale: 1, y: 0, opacity: 1, rotate: 0 }} 
-              exit={{ scale: 0.9, y: 20, opacity: 0, rotate: 2 }}
-              className={`relative w-full max-w-lg shadow-2xl overflow-hidden border-l-4 rounded-r-lg rounded-l-sm ${
-                isDark ? 'bg-slate-900 border-rose-900' : 'bg-[#faf8f5] border-red-300'
+              initial={{ scale: 0.95, y: 20, opacity: 0 }} 
+              animate={{ scale: 1, y: 0, opacity: 1 }} 
+              exit={{ scale: 0.95, y: 20, opacity: 0 }}
+              className={`relative w-full max-w-lg shadow-2xl overflow-hidden rounded-2xl ${
+                isDark ? 'bg-slate-900 text-slate-100 border border-slate-700' : 'bg-white text-gray-800'
               }`}
-              style={{
-                backgroundImage: `repeating-linear-gradient(transparent, transparent 39px, ${isDark ? '#334155' : '#e5e7eb'} 39px, ${isDark ? '#334155' : '#e5e7eb'} 40px)`,
-                backgroundAttachment: 'local'
-              }}
             >
-              <div className="p-8 pb-10">
-                <div className={`justify-between items-start mb-6 inline-block pr-4 ${isDark ? 'bg-slate-900' : 'bg-[#faf8f5]'}`}>
-                  <div>
-                    <h2 className={`text-4xl font-handwriting ${isDark ? 'text-slate-100' : 'text-gray-800'}`}>
-                      {editingSong ? 'Rewrite Track' : 'New Song'}
-                    </h2>
-                  </div>
-                  <button onClick={closeModal} type="button" className={`absolute top-6 right-6 p-2 rounded-full transition-colors ${isDark ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}>
-                    <X className={`w-6 h-6 ${isDark ? 'text-slate-400' : 'text-gray-500'}`} />
-                  </button>
-                </div>
+              <div className={`absolute top-0 bottom-0 left-8 w-[2px] ${isDark ? 'bg-slate-700' : 'bg-red-200/60'}`} />
+
+              <div className="px-12 py-8 relative">
+                <button onClick={closeModal} className={`absolute top-4 right-4 p-2 rounded-full transition-colors ${isDark ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
+                  <X className="w-5 h-5" />
+                </button>
+                
+                <h2 className="text-4xl font-handwriting mb-6">
+                  {editingSong ? 'Rewrite Track' : 'New Song'}
+                </h2>
 
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   editingSong ? updateMutation.mutate({ id: editingSong.id, data: formData }) : createMutation.mutate(formData);
-                }} className="space-y-6 mt-[-10px]">
+                }} className="space-y-5">
                   
                   <div className="space-y-4">
                     <input type="text" required placeholder="Song Title..." value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className={`w-full bg-transparent border-none outline-none font-handwriting text-3xl leading-[40px] h-10 ${
-                        isDark ? 'text-slate-100 placeholder:text-slate-500' : 'text-gray-800 placeholder:text-gray-400'
+                      className={`w-full bg-transparent border-b-2 font-handwriting text-3xl py-2 outline-none transition-colors ${
+                        isDark ? 'border-slate-700 focus:border-pink-500 placeholder:text-slate-600' : 'border-gray-200 focus:border-pink-400 placeholder:text-gray-400'
                       }`} />
                     
                     <input type="text" required placeholder="Artist..." value={formData.artist} onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
-                      className={`w-full bg-transparent border-none outline-none font-handwriting text-3xl leading-[40px] h-10 ${
-                        isDark ? 'text-slate-100 placeholder:text-slate-500' : 'text-gray-800 placeholder:text-gray-400'
+                      className={`w-full bg-transparent border-b-2 font-handwriting text-3xl py-2 outline-none transition-colors ${
+                        isDark ? 'border-slate-700 focus:border-pink-500 placeholder:text-slate-600' : 'border-gray-200 focus:border-pink-400 placeholder:text-gray-400'
                       }`} />
                   </div>
 
-                  <div className={`p-4 rounded-sm border border-dashed ${
-                    isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-gray-300'
-                  }`}>
-                    <label className={`font-handwriting text-xl block mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Vibe / Mood:</label>
-                    <select value={formData.mood} onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
-                      className={`w-full bg-transparent font-handwriting text-2xl outline-none cursor-pointer ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
-                      {MOOD_CHOICES.map((mood) => (
-                        <option key={mood.value} value={mood.value} className={isDark ? 'bg-slate-800 text-slate-100' : ''}>{mood.label}</option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Vibe / Mood</label>
+                      <select value={formData.mood} onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
+                        className={`w-full p-2.5 rounded-lg border outline-none cursor-pointer ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'}`}>
+                        {MOOD_CHOICES.map((mood) => (
+                          <option key={mood.value} value={mood.value}>{mood.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <input type="url" placeholder="YouTube Link (optional)" value={formData.youtube_link} onChange={(e) => setFormData({ ...formData, youtube_link: e.target.value })}
-                      className={`w-full bg-transparent border-none outline-none font-handwriting text-2xl leading-[40px] h-10 ${
-                        isDark ? 'text-blue-400 placeholder:text-slate-500' : 'text-blue-600 placeholder:text-gray-400'
-                      }`} />
-                    
-                    <input type="url" placeholder="Spotify Link (optional)" value={formData.spotify_link} onChange={(e) => setFormData({ ...formData, spotify_link: e.target.value })}
-                      className={`w-full bg-transparent border-none outline-none font-handwriting text-2xl leading-[40px] h-10 ${
-                        isDark ? 'text-emerald-400 placeholder:text-slate-500' : 'text-emerald-600 placeholder:text-gray-400'
-                      }`} />
+                  <div className="space-y-3 pt-2">
+                    <label className={`text-xs font-bold uppercase tracking-wider block ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Media Links (Optional)</label>
+                    <div className="relative">
+                      <Play className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                      <input type="url" placeholder="YouTube URL" value={formData.youtube_link} onChange={(e) => setFormData({ ...formData, youtube_link: e.target.value })}
+                        className={`w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none text-sm transition-colors ${
+                          isDark ? 'bg-slate-800 border-slate-700 focus:border-red-500/50' : 'bg-gray-50 border-gray-200 focus:border-red-400/50'
+                        }`} />
+                    </div>
+                    <div className="relative">
+                      <Music className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+                      <input type="url" placeholder="Spotify URL" value={formData.spotify_link} onChange={(e) => setFormData({ ...formData, spotify_link: e.target.value })}
+                        className={`w-full pl-9 pr-4 py-2.5 rounded-lg border outline-none text-sm transition-colors ${
+                          isDark ? 'bg-slate-800 border-slate-700 focus:border-emerald-500/50' : 'bg-gray-50 border-gray-200 focus:border-emerald-400/50'
+                        }`} />
+                    </div>
                   </div>
 
                   {editingSong && (
-                    <div className={`p-4 border rounded-sm transform rotate-1 ${
-                      isDark ? 'bg-yellow-900/20 border-yellow-700/50' : 'bg-yellow-50/80 border-yellow-200'
-                    }`}>
+                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-amber-50/50 border-amber-200/50'}`}>
                       <label className="flex items-center gap-3 cursor-pointer">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${
-                          formData.is_listened 
-                            ? 'bg-emerald-500 border-emerald-500' 
-                            : (isDark ? 'border-slate-500' : 'border-gray-400')
+                        <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${
+                          formData.is_listened ? 'bg-emerald-500 border-emerald-500' : (isDark ? 'border-slate-600' : 'border-gray-300')
                         }`}>
-                          {formData.is_listened && <CheckCircle className="w-4 h-4 text-white" />}
+                          {formData.is_listened && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                         </div>
                         <input type="checkbox" className="hidden" checked={formData.is_listened} onChange={(e) => setFormData({ ...formData, is_listened: e.target.checked })} />
-                        <span className={`font-handwriting text-2xl ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>We've listened to this</span>
+                        <span className="font-handwriting text-2xl mt-1">We've listened to this</span>
                       </label>
                       
                       {formData.is_listened && (
-                        <div className={`flex items-center gap-4 pt-3 mt-3 border-t border-dashed ${isDark ? 'border-yellow-700/50' : 'border-yellow-200'}`}>
-                          <span className={`font-handwriting text-2xl ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Rating:</span>
+                        <div className="flex items-center gap-4 pt-4 mt-2 border-t border-dashed border-gray-300/50">
+                          <span className="text-sm font-semibold">Rating:</span>
                           <div className="flex gap-1">
                             {[1,2,3,4,5].map((r) => (
                               <button key={r} type="button" onClick={() => setFormData({ ...formData, rating: r })}>
-                                <Star className={`w-8 h-8 ${
-                                  formData.rating >= r 
-                                    ? 'text-amber-500 fill-current' 
-                                    : (isDark ? 'text-slate-600 hover:text-slate-500' : 'text-gray-300 hover:text-gray-400')
+                                <Star className={`w-7 h-7 transition-colors ${
+                                  formData.rating >= r ? 'text-amber-400 fill-current' : (isDark ? 'text-slate-700 hover:text-slate-600' : 'text-gray-200 hover:text-gray-300')
                                 }`} />
                               </button>
                             ))}
@@ -559,8 +489,8 @@ const PlaylistSection: React.FC<PlaylistSectionProps> = ({ yearId, yearNumber })
                   )}
 
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit"
-                    className={`w-full text-white font-handwriting text-3xl py-2 rounded-sm shadow-md transition-colors transform -rotate-1 ${
-                      isDark ? 'bg-pink-600 hover:bg-pink-700' : 'bg-pink-400 hover:bg-pink-500'
+                    className={`w-full mt-4 text-white font-bold py-3 rounded-xl shadow-md transition-colors ${
+                      isDark ? 'bg-pink-600 hover:bg-pink-700' : 'bg-pink-500 hover:bg-pink-600'
                     }`}>
                     {editingSong ? 'Save Changes' : 'Add to Mixtape'}
                   </motion.button>
