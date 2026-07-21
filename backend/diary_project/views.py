@@ -636,8 +636,19 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
                 pass
 
         members = list(couple.members.all())
-        me = members[0] if len(members) > 0 else None
-        partner = members[1] if len(members) > 1 else None
+        
+        current_user_profile = request.user.profile
+        
+        me = None
+        partner = None
+        for member in members:
+            if member.id == current_user_profile.id:
+                me = member
+            else:
+                partner = member
+        
+        if me is None and len(members) > 0:
+            me = members[0]
 
         my_count = queryset.filter(creator=me).count() if me else 0
         partner_count = queryset.filter(creator=partner).count() if partner else 0
@@ -646,13 +657,14 @@ class SongRecommendationViewSet(CoupleFilteredViewSet):
         if no_creator_count > 0:
             my_count += no_creator_count
 
+
         avg_rating = queryset.filter(rating__gt=0).aggregate(avg=Avg('rating'))['avg'] or 0
 
         return Response({
             'total_songs': queryset.count(),
             'listened_count': queryset.filter(is_listened=True).count(),
-            'my_recommendations': my_count,
-            'shaira_recommendations': partner_count,
+            'my_recommendations': my_count,  
+            'shaira_recommendations': partner_count,  
             'average_rating': round(avg_rating, 1),
         })
 
