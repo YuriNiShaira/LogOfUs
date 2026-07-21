@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -45,6 +45,7 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
   const [activeGame, setActiveGame] = useState<GameType>('menu');
   const [resetTarget, setResetTarget] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
   
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -52,6 +53,16 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
 
   const displayName = user?.display_name || 'You';
   const partnerName = user?.partner_name || 'Partner';
+
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch leaderboard
   const { data: leaderboard, refetch: refetchLeaderboard } = useQuery<LeaderboardData>({
@@ -61,7 +72,6 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
       const response = await api.get(url);
       return response.data;
     },
-    // ✅ Add this to ensure fresh data
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
@@ -168,13 +178,12 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
     }
   };
 
-  // Get the score for a specific game
   const getGameScore = (gameName: string) => {
     return leaderboard?.games?.find((g) => g.game_name === gameName);
   };
 
   return (
-    <div className={`space-y-8 max-w-5xl mx-auto p-6 sm:p-10 ${bgMain} rounded-sm min-h-screen transition-colors duration-300 shadow-[0_10px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.4)] border border-rose-900/5 relative overflow-hidden`}>
+    <div className={`space-y-8 max-w-5xl mx-auto p-4 sm:p-10 ${bgMain} rounded-sm min-h-screen transition-colors duration-300 shadow-[0_10px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.4)] border border-rose-900/5 relative overflow-hidden`}>
       
       <style>{`
         .paper-grain {
@@ -183,9 +192,9 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
       `}</style>
       <div className="absolute inset-0 opacity-[0.03] paper-grain pointer-events-none mix-blend-multiply dark:mix-blend-overlay"></div>
 
-      {/* Header & Overall Scoreboard */}
-      <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-rose-200/50 dark:border-rose-900/50">
-        <div className="flex items-start gap-4">
+      {/* Header & Overall Scoreboard - Mobile responsive */}
+      <div className="relative z-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-rose-200/50 dark:border-rose-900/50">
+        <div className="flex items-start gap-3">
           <button
             onClick={handleBack}
             className={`p-2 rounded-full transition-colors ${isDark ? 'hover:bg-rose-900/50' : 'hover:bg-rose-50'}`}
@@ -194,32 +203,32 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
             <ArrowLeft className={`w-5 h-5 ${isDark ? 'text-rose-400' : 'text-rose-600'}`} />
           </button>
           <div>
-            <p className={`text-2.75 font-bold uppercase tracking-[0.2em] ${textSub} mb-2 flex items-center gap-2`}>
-              <Gamepad2 className="w-4 h-4" /> Games Arena
+            <p className={`text-xs sm:text-2.75 font-bold uppercase tracking-[0.2em] ${textSub} mb-1 flex items-center gap-2`}>
+              <Gamepad2 className="w-4 h-4" /> Games
             </p>
-            <h2 className={`text-4xl sm:text-5xl font-serif tracking-wide ${textMain}`}>
-              Play &amp; Wagers <span className="text-rose-400 font-light italic text-3xl ml-2">{yearNumber ? `Vol. ${yearNumber}` : '🎮'}</span>
+            <h2 className={`text-2xl sm:text-4xl md:text-5xl font-serif tracking-wide ${textMain}`}>
+              Play &amp; Wagers <span className="text-rose-400 font-light italic text-xl sm:text-3xl ml-1">{yearNumber ? `Vol. ${yearNumber}` : '🎮'}</span>
             </h2>
           </div>
         </div>
 
-        {/* Journal Ledger Scoreboard */}
-        <div className={`flex items-center gap-8 px-10 py-5 rounded-sm shadow-sm border ${cardBg}`}>
+        {/* Mobile-friendly Scoreboard */}
+        <div className={`flex items-center gap-4 sm:gap-8 px-4 sm:px-10 py-3 sm:py-5 rounded-sm shadow-sm border ${cardBg} w-full lg:w-auto justify-around`}>
           <div className="text-center relative">
-            {leaderboard?.leader === 'me' && <Crown className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-amber-500" />}
-            <p className={`text-2.5 font-serif uppercase tracking-widest ${textSub} mb-1`}>{displayName}</p>
-            <p className={`text-4xl font-handwriting ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>{leaderboard?.my_total || 0}</p>
+            {leaderboard?.leader === 'me' && <Crown className="absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 w-3 sm:w-4 h-3 sm:h-4 text-amber-500" />}
+            <p className={`text-[10px] sm:text-2.5 font-serif uppercase tracking-widest ${textSub} mb-0.5 sm:mb-1`}>{displayName}</p>
+            <p className={`text-xl sm:text-4xl font-handwriting ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>{leaderboard?.my_total || 0}</p>
           </div>
           
-          <div className="flex flex-col items-center px-6 border-x border-dashed border-rose-200 dark:border-rose-900/50">
-            <Trophy className={`w-5 h-5 mb-1 ${isDark ? 'text-rose-900' : 'text-rose-200'}`} />
-            <span className={`text-2.75 font-serif italic uppercase tracking-wider ${textSub}`}>The Ledger</span>
+          <div className="flex flex-col items-center px-2 sm:px-6 border-x border-dashed border-rose-200 dark:border-rose-900/50">
+            <Trophy className={`w-3 h-3 sm:w-5 sm:h-5 mb-0.5 sm:mb-1 ${isDark ? 'text-rose-900' : 'text-rose-200'}`} />
+            <span className={`text-[8px] sm:text-2.75 font-serif italic uppercase tracking-wider ${textSub}`}>Ledger</span>
           </div>
           
           <div className="text-center relative">
-            {leaderboard?.leader === 'shaira' && <Crown className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-amber-500" />}
-            <p className={`text-2.5 font-serif uppercase tracking-widest ${textSub} mb-1`}>{partnerName}</p>
-            <p className={`text-4xl font-handwriting ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>{leaderboard?.shaira_total || 0}</p>
+            {leaderboard?.leader === 'shaira' && <Crown className="absolute -top-5 sm:-top-6 left-1/2 -translate-x-1/2 w-3 sm:w-4 h-3 sm:h-4 text-amber-500" />}
+            <p className={`text-[10px] sm:text-2.5 font-serif uppercase tracking-widest ${textSub} mb-0.5 sm:mb-1`}>{partnerName}</p>
+            <p className={`text-xl sm:text-4xl font-handwriting ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>{leaderboard?.shaira_total || 0}</p>
           </div>
         </div>
       </div>
@@ -232,7 +241,7 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             exit={{ opacity: 0, y: -20 }}
-            className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 pt-6"
+            className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 pt-4 sm:pt-6"
           >
             {games.map((game) => {
               const Icon = game.icon;
@@ -244,31 +253,31 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
                   whileHover={{ scale: 1.02, y: -4 }} 
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setActiveGame(game.id)}
-                  className={`p-8 sm:p-10 rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all border group relative overflow-hidden cursor-pointer ${cardBg}`}
+                  className={`p-4 sm:p-10 rounded-sm shadow-[0_4px_20px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all border group relative overflow-hidden cursor-pointer ${cardBg}`}
                 >
-                  <div className="flex items-start justify-between mb-8 relative z-10">
-                    <div className={`p-4 rounded-full bg-transparent border-2 border-rose-200 dark:border-rose-900/60 transform group-hover:rotate-12 transition-transform duration-500`}>
-                      <Icon className={`w-7 h-7 ${isDark ? 'text-rose-400' : 'text-rose-600'}`} />
+                  <div className="flex items-start justify-between mb-4 sm:mb-8 relative z-10">
+                    <div className={`p-2 sm:p-4 rounded-full bg-transparent border-2 border-rose-200 dark:border-rose-900/60 transform group-hover:rotate-12 transition-transform duration-500`}>
+                      <Icon className={`w-5 h-5 sm:w-7 sm:h-7 ${isDark ? 'text-rose-400' : 'text-rose-600'}`} />
                     </div>
                     
                     {score && (
-                      <div className={`px-5 py-3 rounded-sm text-right border ${isDark ? 'bg-[#2a0815] border-rose-900/50' : 'bg-[#FFFAF0] border-rose-100'}`}>
-                        <p className={`text-2.25 uppercase font-serif tracking-widest ${textSub} mb-1`}>Score</p>
-                        <p className="text-2xl font-handwriting flex items-center gap-2">
+                      <div className={`px-2 sm:px-5 py-1.5 sm:py-3 rounded-sm text-right border ${isDark ? 'bg-[#2a0815] border-rose-900/50' : 'bg-[#FFFAF0] border-rose-100'}`}>
+                        <p className={`text-[8px] sm:text-2.25 uppercase font-serif tracking-widest ${textSub} mb-0.5 sm:mb-1`}>Score</p>
+                        <p className="text-base sm:text-2xl font-handwriting flex items-center gap-1 sm:gap-2">
                           <span className={isDark ? 'text-rose-300' : 'text-rose-700'}>{score.my_score}</span>
-                          <span className={`${textSub} text-sm`}>—</span>
+                          <span className={`${textSub} text-xs sm:text-sm`}>—</span>
                           <span className={isDark ? 'text-rose-400' : 'text-rose-600'}>{score.shaira_score}</span>
                         </p>
                       </div>
                     )}
                   </div>
                   
-                  <h3 className={`text-3xl font-serif mb-3 tracking-wide ${textMain}`}>{game.name}</h3>
-                  <p className={`text-sm leading-relaxed mb-8 font-serif italic ${textSub}`}>{game.description}</p>
+                  <h3 className={`text-2xl sm:text-3xl font-serif mb-1 sm:mb-3 tracking-wide ${textMain}`}>{game.name}</h3>
+                  <p className={`text-xs sm:text-sm leading-relaxed mb-4 sm:mb-8 font-serif italic ${textSub}`}>{game.description}</p>
                   
-                  <div className={`inline-flex items-center gap-3 text-2.75 font-serif uppercase tracking-[0.2em] transition-colors ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>
+                  <div className={`inline-flex items-center gap-2 sm:gap-3 text-2.75 font-serif uppercase tracking-[0.2em] transition-colors ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>
                     Play Now
-                    <span className="text-lg leading-none transform group-hover:translate-x-2 transition-transform">→</span>
+                    <span className="text-base sm:text-lg leading-none transform group-hover:translate-x-2 transition-transform">→</span>
                   </div>
                 </motion.div>
               );
@@ -284,6 +293,7 @@ const GamesArena: React.FC<GamesArenaProps> = ({ yearId, yearNumber }) => {
             theme={theme}
             displayName={displayName}
             partnerName={partnerName}
+            isMobile={isMobile}
           />
         ) : activeGame === 'memorymatch' ? (
           <motion.div key="memorymatch" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -321,9 +331,19 @@ interface TicTacToeProps {
   theme: string;
   displayName: string;
   partnerName: string;
+  isMobile?: boolean;
 }
 
-const TicTacToeGame: React.FC<TicTacToeProps> = ({ onBack, onWin, currentScore, onReset, theme, displayName, partnerName }) => {
+const TicTacToeGame: React.FC<TicTacToeProps> = ({ 
+  onBack, 
+  onWin, 
+  currentScore, 
+  onReset, 
+  theme, 
+  displayName, 
+  partnerName,
+  isMobile = false 
+}) => {
   const [board, setBoard] = useState<(string | null)[]>(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
   const [winner, setWinner] = useState<string | null>(null);
@@ -378,47 +398,48 @@ const TicTacToeGame: React.FC<TicTacToeProps> = ({ onBack, onWin, currentScore, 
       initial={{ opacity: 0, scale: 0.98 }} 
       animate={{ opacity: 1, scale: 1 }} 
       exit={{ opacity: 0, scale: 0.98 }}
-      className="relative z-10 rounded-sm p-6 sm:p-12 w-full"
+      className="relative z-10 rounded-sm p-4 sm:p-12 w-full"
     >
-      <div className="flex items-center justify-between mb-12 flex-wrap gap-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-6 sm:mb-12 flex-wrap gap-4 sm:gap-6">
         <button 
           onClick={onBack} 
-          className={`flex items-center gap-2 text-2.5 font-serif uppercase tracking-widest transition-colors ${textSub} hover:${textMain}`}
+          className={`flex items-center gap-2 text-xs sm:text-2.5 font-serif uppercase tracking-widest transition-colors ${textSub} hover:${textMain}`}
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Menu
+          <ArrowLeft className="w-3.5 h-3.5" /> Back
         </button>
         
-        <div className={`flex items-center gap-8 px-8 py-3 rounded-sm border ${isDark ? 'bg-[#1a050f]/60 border-rose-900/50' : 'bg-white/60 border-rose-200/60'}`}>
+        {/* Mobile-friendly score display */}
+        <div className={`flex items-center gap-4 sm:gap-8 px-4 sm:px-8 py-2 sm:py-3 rounded-sm border ${isDark ? 'bg-[#1a050f]/60 border-rose-900/50' : 'bg-white/60 border-rose-200/60'} w-full sm:w-auto justify-around`}>
           <div className="text-center">
-            <p className={`text-2.25 uppercase font-serif tracking-widest ${textSub} mb-1`}>{displayName}</p>
-            <p className={`text-3xl font-handwriting ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>{currentScore?.my_score || 0}</p>
+            <p className={`text-[10px] sm:text-2.25 uppercase font-serif tracking-widest ${textSub} mb-0.5 sm:mb-1`}>{displayName}</p>
+            <p className={`text-xl sm:text-3xl font-handwriting ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>{currentScore?.my_score || 0}</p>
           </div>
           
           <button 
             onClick={() => setShowResetModal(true)} 
-            className={`p-2 rounded-full transition-colors ${isDark ? 'hover:bg-rose-900/50 text-rose-500' : 'hover:bg-rose-50 text-rose-300'}`} 
+            className={`p-1.5 sm:p-2 rounded-full transition-colors ${isDark ? 'hover:bg-rose-900/50 text-rose-500' : 'hover:bg-rose-50 text-rose-300'}`} 
             title="Erase Ledger"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
           
           <div className="text-center">
-            <p className={`text-2.25 uppercase font-serif tracking-widest ${textSub} mb-1`}>{partnerName}</p>
-            <p className={`text-3xl font-handwriting ${isDark ? 'text-rose-400' : 'text-rose-500'}`}>{currentScore?.shaira_score || 0}</p>
+            <p className={`text-[10px] sm:text-2.25 uppercase font-serif tracking-widest ${textSub} mb-0.5 sm:mb-1`}>{partnerName}</p>
+            <p className={`text-xl sm:text-3xl font-handwriting ${isDark ? 'text-rose-400' : 'text-rose-500'}`}>{currentScore?.shaira_score || 0}</p>
           </div>
         </div>
       </div>
 
-      <div className="text-center mb-12">
-        <h3 className={`text-4xl font-serif tracking-wide ${textMain}`}>
+      <div className="text-center mb-6 sm:mb-12">
+        <h3 className={`text-xl sm:text-4xl font-serif tracking-wide ${textMain}`}>
           {winner
             ? `${winner === '❤️' ? displayName : partnerName} claims victory! 🎉`
             : `It's ${isXNext ? displayName : partnerName}'s turn ${isXNext ? '❤️' : '⭐'}`}
         </h3>
       </div>
 
-      {/* Tic Tac Toe Board */}
-      <div className="max-w-87.5 sm:max-w-100 mx-auto p-4 sm:p-8">
+      {/* Mobile-friendly Tic Tac Toe Board */}
+      <div className="max-w-[320px] sm:max-w-87.5 mx-auto p-2 sm:p-8">
         <div className="grid grid-cols-3">
           {board.map((cell, index) => {
             const borderBottom = index < 6 ? (isDark ? 'border-b border-rose-900/60' : 'border-b border-rose-200') : '';
@@ -427,16 +448,17 @@ const TicTacToeGame: React.FC<TicTacToeProps> = ({ onBack, onWin, currentScore, 
             return (
               <motion.button 
                 key={index}
-                whileHover={!cell && !winner ? { scale: 1.05 } : {}}
+                whileHover={!cell && !winner ? { scale: 1.03 } : {}}
                 whileTap={!cell && !winner ? { scale: 0.95 } : {}}
                 onClick={() => handleClick(index)}
-                className={`w-full aspect-square text-5xl sm:text-6xl flex items-center justify-center transition-colors
+                className={`w-full aspect-square text-3xl sm:text-6xl flex items-center justify-center transition-colors
                   ${borderBottom} ${borderRight}
                   ${winningLine?.includes(index) 
                     ? (isDark ? 'bg-rose-900/30' : 'bg-rose-50/80') 
                     : (isDark ? 'hover:bg-[#4c0519]/20' : 'hover:bg-rose-50/30')
                   } 
                   ${!cell && !winner ? 'cursor-pointer' : 'cursor-default'}
+                  ${isMobile ? 'min-h-[70px]' : 'min-h-[100px]'}
                 `}
               >
                 {cell && (
@@ -454,12 +476,12 @@ const TicTacToeGame: React.FC<TicTacToeProps> = ({ onBack, onWin, currentScore, 
         </div>
       </div>
 
-      <div className="text-center mt-14">
+      <div className="text-center mt-6 sm:mt-14">
         <motion.button 
           whileHover={{ scale: 1.02 }} 
           whileTap={{ scale: 0.98 }} 
           onClick={resetGame} 
-          className={`px-8 py-3.5 rounded-full font-serif uppercase tracking-widest text-xs transition-all border ${
+          className={`px-4 sm:px-8 py-2 sm:py-3.5 rounded-full font-serif uppercase tracking-widest text-[10px] sm:text-xs transition-all border ${
             isDark
               ? 'bg-rose-900 border-rose-800 text-rose-50 hover:bg-rose-800 shadow-[0_4px_15px_rgba(159,18,57,0.3)]'
               : 'bg-rose-900 border-rose-950 text-rose-50 hover:bg-rose-800 shadow-[0_4px_15px_rgba(136,19,55,0.2)]'

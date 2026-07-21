@@ -21,7 +21,6 @@ import {
   Moon,
   Sun,
   Smartphone,
-  Monitor,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -80,11 +79,11 @@ const SettingsDropdown: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // ✅ Settings state - default cats to false
+  // Settings state - default cats to false
   const [settings, setSettings] = useState({
     enablePetals: true,
     enableAnimations: true,
-    enableCats: false, // ✅ Default to false (disabled)
+    enableCats: false, // Default to false (disabled)
   });
 
   // Background theme state
@@ -158,7 +157,7 @@ const SettingsDropdown: React.FC = () => {
     }
   }, [isOpen, user]);
 
-  // ✅ Load settings from localStorage - with default cats = false
+  // Load settings from localStorage
   useEffect(() => {
     const savedSettings = localStorage.getItem('user_settings');
     if (savedSettings) {
@@ -167,11 +166,9 @@ const SettingsDropdown: React.FC = () => {
         setSettings(prev => ({ 
           ...prev, 
           ...parsed,
-          // ✅ Ensure enableCats defaults to false if not set
           enableCats: parsed.enableCats !== undefined ? parsed.enableCats : false
         }));
       } catch (e) {
-        // If parsing fails, use defaults (cats = false)
         setSettings({
           enablePetals: true,
           enableAnimations: true,
@@ -179,7 +176,6 @@ const SettingsDropdown: React.FC = () => {
         });
       }
     } else {
-      // ✅ No saved settings, use defaults (cats = false)
       setSettings({
         enablePetals: true,
         enableAnimations: true,
@@ -193,7 +189,7 @@ const SettingsDropdown: React.FC = () => {
     }
   }, []);
 
-  // ✅ Handle setting toggle - persists to localStorage
+  // Handle setting toggle - persists to localStorage
   const handleSettingToggle = (key: keyof typeof settings) => {
     // Prevent enabling cats on mobile
     if (key === 'enableCats' && isMobile && !settings[key]) {
@@ -207,16 +203,13 @@ const SettingsDropdown: React.FC = () => {
     const newSettings = { ...settings, [key]: newValue };
     setSettings(newSettings);
     
-    // ✅ Save to localStorage immediately
     localStorage.setItem('user_settings', JSON.stringify(newSettings));
     
-    // ✅ Dispatch event to notify other components (like Dashboard)
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'user_settings',
       newValue: JSON.stringify(newSettings),
     }));
     
-    // ✅ Dispatch custom event for same-window updates
     window.dispatchEvent(new CustomEvent('userSettingsChanged', {
       detail: { settings: newSettings }
     }));
@@ -367,19 +360,20 @@ const SettingsDropdown: React.FC = () => {
             animate={{ opacity: 1, y: 0, rotateX: 0 }}
             exit={{ opacity: 0, y: -10, rotateX: -10, transition: { duration: 0.15 } }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className={`absolute right-0 top-14 w-[520px] max-h-[85vh] overflow-hidden rounded-xl shadow-2xl border ${
+            className={`fixed left-4 right-4 top-20 sm:absolute sm:left-auto sm:right-0 sm:top-14 sm:w-[520px] max-h-[85vh] overflow-hidden rounded-xl shadow-2xl border ${
               isDark
                 ? 'bg-[#242121] border-[#3a3535] shadow-black/60'
                 : 'bg-[#faf8f5] border-[#e8e4dc] shadow-stone-300/60'
             }`}
           >
-            <div className="flex h-[520px]">
+            <div className="flex flex-col sm:flex-row h-full sm:h-[520px] max-h-[85vh]">
               
               {/* Sidebar Tabs */}
-              <div className={`w-40 shrink-0 py-6 px-3 flex flex-col gap-1 border-r relative z-10 ${
+              <div className={`w-full sm:w-40 shrink-0 p-2 sm:py-6 sm:px-3 flex flex-row sm:flex-col gap-1 overflow-x-auto sm:overflow-visible border-b sm:border-b-0 sm:border-r relative z-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${
                 isDark ? 'border-[#3a3535] bg-[#1c1a1a]/50' : 'border-[#e8e4dc] bg-[#f2efe9]/50'
               }`}>
-                <div className={`absolute right-0 top-0 bottom-0 w-[1px] shadow-[-2px_0_4px_rgba(0,0,0,0.05)] ${isDark ? 'bg-black/20' : 'bg-black/5'}`} />
+                {/* Desktop Vertical Border Line */}
+                <div className={`hidden sm:block absolute right-0 top-0 bottom-0 w-[1px] shadow-[-2px_0_4px_rgba(0,0,0,0.05)] ${isDark ? 'bg-black/20' : 'bg-black/5'}`} />
 
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -388,26 +382,26 @@ const SettingsDropdown: React.FC = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-l-xl text-sm font-serif transition-all relative ${
+                      className={`shrink-0 sm:w-full flex items-center gap-2 sm:gap-3 px-3 py-2.5 sm:py-3 rounded-lg sm:rounded-l-xl sm:rounded-r-none text-sm font-serif transition-all relative ${
                         isActive
                           ? isDark
-                            ? 'bg-[#242121] text-rose-300 shadow-[-4px_0_10px_rgba(0,0,0,0.1)] translate-x-1'
-                            : 'bg-[#faf8f5] text-rose-600 shadow-[-4px_0_10px_rgba(0,0,0,0.03)] translate-x-1'
+                            ? 'bg-[#242121] text-rose-300 sm:shadow-[-4px_0_10px_rgba(0,0,0,0.1)] sm:translate-x-1'
+                            : 'bg-[#faf8f5] text-rose-600 sm:shadow-[-4px_0_10px_rgba(0,0,0,0.03)] sm:translate-x-1'
                           : isDark
                             ? 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
                             : 'text-stone-500 hover:text-stone-800 hover:bg-black/5'
                       }`}
                     >
                       <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse duration-1000' : ''}`} />
-                      <span className="tracking-wide">{tab.label}</span>
+                      <span className="tracking-wide whitespace-nowrap">{tab.label}</span>
                       {isActive && (
-                        <div className={`absolute -right-3 top-0 bottom-0 w-3 ${isDark ? 'bg-[#242121]' : 'bg-[#faf8f5]'}`} />
+                        <div className={`hidden sm:block absolute -right-3 top-0 bottom-0 w-3 ${isDark ? 'bg-[#242121]' : 'bg-[#faf8f5]'}`} />
                       )}
                     </button>
                   );
                 })}
                 
-                <div className="mt-auto pt-4 border-t border-stone-300/30 dark:border-stone-700/50">
+                <div className="ml-auto sm:ml-0 mt-0 sm:mt-auto pt-0 sm:pt-4 border-l sm:border-l-0 sm:border-t pl-2 sm:pl-0 border-stone-300/30 dark:border-stone-700/50 flex shrink-0 items-center">
                   <button
                     onClick={() => {
                       const refreshToken = localStorage.getItem('refreshToken');
@@ -417,22 +411,22 @@ const SettingsDropdown: React.FC = () => {
                       logout();
                       setIsOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-serif text-rose-500/80 hover:text-rose-600 hover:bg-rose-500/10 transition-all"
+                    className="flex-1 flex items-center justify-center sm:justify-start gap-2 sm:gap-3 px-3 py-2.5 sm:py-3 rounded-lg text-sm font-serif text-rose-500/80 hover:text-rose-600 hover:bg-rose-500/10 transition-all"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span className="tracking-wide">Close Diary</span>
+                    <span className="tracking-wide whitespace-nowrap">Close Diary</span>
                   </button>
                 </div>
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 overflow-y-auto p-8 relative">
+              <div className="flex-1 overflow-y-auto p-5 sm:p-8 relative">
                 {loading ? (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center justify-center h-full min-h-[200px]">
                     <div className="w-6 h-6 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : error ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center opacity-80">
+                  <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center opacity-80">
                     <BookHeart className="w-12 h-12 text-rose-400/50 mb-4" />
                     <h3 className={`font-serif text-xl mb-2 ${isDark ? 'text-amber-100' : 'text-amber-900'}`}>
                       Pages Still Blank
@@ -456,7 +450,7 @@ const SettingsDropdown: React.FC = () => {
                   >
                     {/* Profile Tab */}
                     {activeTab === 'profile' && (
-                      <form onSubmit={handleProfileUpdate} className="space-y-6">
+                      <form onSubmit={handleProfileUpdate} className="space-y-6 pb-6">
                         <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
                           <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
                             My Identity
@@ -471,7 +465,7 @@ const SettingsDropdown: React.FC = () => {
                             <label className={`block text-xs font-serif tracking-widest uppercase mb-2 ${isDark ? 'text-stone-500' : 'text-stone-400'}`}>
                               Author Handle
                             </label>
-                            <div className={`px-4 py-3 rounded-lg font-mono text-sm ${isDark ? 'bg-black/20 text-stone-400' : 'bg-stone-100/50 text-stone-500'}`}>
+                            <div className={`px-4 py-3 rounded-lg font-mono text-sm overflow-hidden text-ellipsis ${isDark ? 'bg-black/20 text-stone-400' : 'bg-stone-100/50 text-stone-500'}`}>
                               @{profile?.username || user?.username || 'guest_writer'}
                             </div>
                           </div>
@@ -516,7 +510,7 @@ const SettingsDropdown: React.FC = () => {
 
                     {/* Couple Tab */}
                     {activeTab === 'couple' && (
-                      <div className="space-y-6">
+                      <div className="space-y-6 pb-6">
                         <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
                           <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
                             Our Story
@@ -529,14 +523,14 @@ const SettingsDropdown: React.FC = () => {
                         <div className="space-y-5">
                           <div className={`p-4 rounded-xl border ${isDark ? 'border-rose-900/30 bg-rose-950/20' : 'border-rose-200/50 bg-rose-50/50'}`}>
                             <div className="flex items-center gap-3">
-                              <div className={`p-2 rounded-full ${isDark ? 'bg-rose-900/40' : 'bg-rose-200/50'}`}>
+                              <div className={`p-2 shrink-0 rounded-full ${isDark ? 'bg-rose-900/40' : 'bg-rose-200/50'}`}>
                                 <Heart className={`w-5 h-5 ${isDark ? 'text-rose-300' : 'text-rose-600'} ${hasPartner ? 'fill-current' : ''}`} />
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <p className={`text-xs font-serif uppercase tracking-widest ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                                   Co-Author
                                 </p>
-                                <p className={`text-lg font-serif ${isDark ? 'text-rose-100' : 'text-rose-900'}`}>
+                                <p className={`text-lg font-serif truncate ${isDark ? 'text-rose-100' : 'text-rose-900'}`}>
                                   {hasPartner ? partnerName : 'Pages awaiting a partner...'}
                                 </p>
                               </div>
@@ -549,14 +543,14 @@ const SettingsDropdown: React.FC = () => {
                                 Invitation Letter Code
                               </label>
                               <div className="flex gap-2">
-                                <div className={`flex-1 px-4 py-3 rounded-lg font-mono text-center text-lg tracking-[0.25em] ${
+                                <div className={`flex-1 px-2 sm:px-4 py-3 rounded-lg font-mono text-center text-sm sm:text-lg tracking-widest sm:tracking-[0.25em] ${
                                   isDark ? 'bg-black/20 text-rose-300' : 'bg-rose-50/50 text-rose-700 border border-rose-100'
                                 }`}>
                                   {inviteCode}
                                 </div>
                                 <button
                                   onClick={copyInviteCode}
-                                  className={`px-6 py-3 rounded-lg font-serif transition-all ${
+                                  className={`px-4 sm:px-6 py-3 rounded-lg font-serif transition-all shrink-0 ${
                                     isDark ? 'bg-rose-900/50 text-rose-200 hover:bg-rose-800/60' : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
                                   }`}
                                 >
@@ -616,7 +610,7 @@ const SettingsDropdown: React.FC = () => {
 
                     {/* Security Tab */}
                     {activeTab === 'security' && (
-                      <form onSubmit={handlePasswordChange} className="space-y-6">
+                      <form onSubmit={handlePasswordChange} className="space-y-6 pb-6">
                         <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
                           <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
                             Privacy Lock
@@ -636,7 +630,7 @@ const SettingsDropdown: React.FC = () => {
                                 type={showCurrentPassword ? 'text' : 'password'}
                                 value={passwordData.current_password}
                                 onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
-                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
+                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-12 ${
                                   isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
                                 }`}
                                 placeholder="Enter current password"
@@ -645,7 +639,7 @@ const SettingsDropdown: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors p-1"
                               >
                                 {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                               </button>
@@ -661,7 +655,7 @@ const SettingsDropdown: React.FC = () => {
                                 type={showNewPassword ? 'text' : 'password'}
                                 value={passwordData.new_password}
                                 onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
+                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-12 ${
                                   isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
                                 }`}
                                 placeholder="Min. 8 characters"
@@ -671,7 +665,7 @@ const SettingsDropdown: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setShowNewPassword(!showNewPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors p-1"
                               >
                                 {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                               </button>
@@ -687,7 +681,7 @@ const SettingsDropdown: React.FC = () => {
                                 type={showConfirmPassword ? 'text' : 'password'}
                                 value={passwordData.confirm_password}
                                 onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-10 ${
+                                className={`w-full px-4 py-3 rounded-lg text-md font-serif transition-all outline-none border-b-2 pr-12 ${
                                   isDark ? 'bg-black/20 border-stone-700 focus:border-rose-400 text-stone-200' : 'bg-white/60 border-stone-200 focus:border-rose-400 text-stone-800'
                                 }`}
                                 placeholder="Type it once more"
@@ -696,7 +690,7 @@ const SettingsDropdown: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors p-1"
                               >
                                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                               </button>
@@ -726,7 +720,7 @@ const SettingsDropdown: React.FC = () => {
 
                     {/* Preferences Tab */}
                     {activeTab === 'preferences' && (
-                      <div className="space-y-6">
+                      <div className="space-y-6 pb-6">
                         <div className="pb-4 border-b border-stone-200/50 dark:border-stone-700/50">
                           <h3 className={`font-serif text-2xl ${isDark ? 'text-rose-200' : 'text-rose-800'}`}>
                             Aesthetics
@@ -745,14 +739,14 @@ const SettingsDropdown: React.FC = () => {
                                 Background Theme
                               </div>
                             </label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {backgroundThemes.map((bgTheme) => {
                                 const isActive = currentBackground === bgTheme.id;
                                 return (
                                   <button
                                     key={bgTheme.id}
                                     onClick={() => handleBackgroundChange(bgTheme.id)}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm font-serif ${
+                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all text-sm font-serif ${
                                       isActive
                                         ? isDark 
                                           ? 'bg-rose-900/50 text-rose-300 border border-rose-700/50' 
@@ -774,7 +768,7 @@ const SettingsDropdown: React.FC = () => {
                           <div className="h-px bg-gradient-to-r from-transparent via-stone-300/30 to-transparent my-4" />
 
                           {/* Falling Petals */}
-                          <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
+                          <div className={`flex items-center justify-between p-3 sm:p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
                             <div>
                               <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
                                 <Flower2 className="inline w-4 h-4 mr-2 text-rose-400" />
@@ -786,14 +780,14 @@ const SettingsDropdown: React.FC = () => {
                             </div>
                             <button
                               onClick={() => handleSettingToggle('enablePetals')}
-                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enablePetals ? 'bg-rose-500/80' : 'bg-stone-300'}`}
+                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner shrink-0 ${settings.enablePetals ? 'bg-rose-500/80' : 'bg-stone-300'}`}
                             >
                               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enablePetals ? 'right-1' : 'left-1'}`} />
                             </button>
                           </div>
 
                           {/* Show Cats - Default disabled */}
-                          <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
+                          <div className={`flex items-center justify-between p-3 sm:p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
                             <div>
                               <div className="flex items-center gap-2">
                                 <Cat className="inline w-4 h-4 text-amber-400" />
@@ -801,12 +795,12 @@ const SettingsDropdown: React.FC = () => {
                                   Show Cats
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2 mt-0.5">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-0.5">
                                 <p className={`text-sm font-serif italic ${isDark ? 'text-stone-400' : 'text-stone-500'}`}>
                                   Cute cat stickers roaming around
                                 </p>
                                 {isMobile && (
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                                  <span className={`text-[10px] w-fit px-2 py-0.5 rounded-full flex items-center gap-1 ${
                                     isDark ? 'bg-amber-900/30 text-amber-400 border border-amber-700/30' : 'bg-amber-100 text-amber-700 border border-amber-200'
                                   }`}>
                                     <Smartphone className="w-2.5 h-2.5" />
@@ -817,14 +811,14 @@ const SettingsDropdown: React.FC = () => {
                             </div>
                             <button
                               onClick={() => handleSettingToggle('enableCats')}
-                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enableCats ? 'bg-rose-500/80' : 'bg-stone-300'}`}
+                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner shrink-0 ${settings.enableCats ? 'bg-rose-500/80' : 'bg-stone-300'}`}
                             >
                               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enableCats ? 'right-1' : 'left-1'}`} />
                             </button>
                           </div>
 
                           {/* Smooth Turning */}
-                          <div className={`flex items-center justify-between p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
+                          <div className={`flex items-center justify-between p-3 sm:p-4 rounded-xl transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}>
                             <div>
                               <p className={`font-serif text-lg ${isDark ? 'text-stone-200' : 'text-stone-800'}`}>
                                 <Sparkles className="inline w-4 h-4 mr-2 text-amber-400" />
@@ -836,7 +830,7 @@ const SettingsDropdown: React.FC = () => {
                             </div>
                             <button
                               onClick={() => handleSettingToggle('enableAnimations')}
-                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner ${settings.enableAnimations ? 'bg-rose-500/80' : 'bg-stone-300'}`}
+                              className={`relative w-12 h-6 rounded-full transition-all duration-300 shadow-inner shrink-0 ${settings.enableAnimations ? 'bg-rose-500/80' : 'bg-stone-300'}`}
                             >
                               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${settings.enableAnimations ? 'right-1' : 'left-1'}`} />
                             </button>
