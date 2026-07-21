@@ -154,6 +154,7 @@ const BucketListPageContent: React.FC<BucketListPageContentProps> = ({ currentUs
 
     if (formData.target_date.trim()) {
       payload.target_date = formData.target_date;
+      payload.status = 'planned';
     }
 
     return payload;

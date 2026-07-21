@@ -195,6 +195,9 @@ export const AddEditBucketListModal: React.FC<AddEditModalProps> = ({
   onSubmit,
 }) => {
   const isDark = theme === 'dark';
+  
+  // Check if target_date is set
+  const hasTargetDate = !!formData.target_date;
 
   return (
     <AnimatePresence>
@@ -295,18 +298,37 @@ export const AddEditBucketListModal: React.FC<AddEditModalProps> = ({
                 </div>
               </div>
 
-              {/* Target Date */}
+              {/* Target Date with auto-status indicator */}
               <div className="pt-2">
                 <label className={`block text-2.25 font-serif uppercase tracking-[0.2em] font-bold mb-1 ${isDark ? 'text-rose-400/80' : 'text-rose-500/80'}`}>Target Date</label>
                 <input
                   type="date"
                   value={formData.target_date}
-                  onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, target_date: e.target.value });
+                  }}
                   className={`w-full bg-transparent border-b border-dashed font-serif text-base outline-none focus:border-solid transition-colors py-1 ${
                     isDark ? 'border-rose-900 text-rose-200 focus:border-rose-500' : 'border-rose-300 text-rose-900 focus:border-rose-400'
                   }`}
                   style={{ colorScheme: isDark ? 'dark' : 'light' }}
                 />
+                {/* Show status hint when date is set */}
+                {hasTargetDate && (
+                  <p className={`text-xs font-serif italic mt-2 flex items-center gap-1.5 ${
+                    isDark ? 'text-emerald-400' : 'text-emerald-600'
+                  }`}>
+                    <span>📅</span>
+                    This dream will be marked as "Planned"
+                  </p>
+                )}
+                {!hasTargetDate && (
+                  <p className={`text-xs font-serif italic mt-2 flex items-center gap-1.5 ${
+                    isDark ? 'text-stone-500' : 'text-stone-400'
+                  }`}>
+                    <span>📌</span>
+                    Add a target date to mark as "Planned"
+                  </p>
+                )}
               </div>
 
               {/* Submit */}
