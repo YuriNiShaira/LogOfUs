@@ -5,6 +5,7 @@ import {
   Heart, ArrowRight, PenLine, BookOpen, Camera, 
   MapPin, Star, Music, MessageCircle, ChevronRight,
   Lock, EyeOff, HeartHandshake, ChevronDown, Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import RomanticBackground from '../components/RomanticBackground';
 import InstallPWA from '../components/InstallPWA';
@@ -443,6 +444,12 @@ const LandingPage: React.FC = () => {
             <p className="text-gray-400 font-serif text-sm">
               © {new Date().getFullYear()} LogOfUs. All rights reserved.
             </p>
+            
+            {/* ========== SUBTLE DEVELOPMENT NOTICE ========== */}
+            <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-red-300 hover:text-amber-400 transition-colors duration-300">
+              <AlertTriangle className="w-3 h-3" />
+              <span className="font-serif">Currently in development — you may encounter bugs</span>
+            </div>
           </div>
         </div>
       </footer>

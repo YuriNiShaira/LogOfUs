@@ -38,7 +38,7 @@ const GamesArenaPage: React.FC = () => {
                 <span className="text-gradient-soft">Games Arena</span>
               </h1>
               <p className={`text-base sm:text-lg font-serif italic mt-2 ${isDarkMode ? 'text-rose-300/60' : 'text-rose-700/50'}`}>
-                Fun games to play together and keep the spark alive! 💕
+                Fun games to play when you're together💕
               </p>
             </div>
           </div>
